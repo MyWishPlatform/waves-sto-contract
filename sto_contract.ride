@@ -1,0 +1,21 @@
+let stoManagementAddressPK = base58'D_MANAGEMENT_ADDRESS_PK'
+let stoColdVaultAddressPK = base58'D_COLD_VAULT_PK'
+let stoManagementAddress = addressFromPublicKey(stoManagementAddressPK)
+let stoColdVaultAddress = addressFromPublicKey(stoColdVaultAddressPK)
+let stoAssetId = '6Y7Ee8VDZYdHzD83mrH6tJPXnv7NansZ6ugPdMpBJfEU'
+let tokenRate = D_RATE
+let hardCap = 100000000000
+let softCap = 500000000000
+let stoRaised = 0
+let startHeight = D_START_HEIGHT
+let finishHeight = D_FINISH_HEIGHT
+let whitelist = D_WHITELIST
+
+match tx {
+    case sendTokens:TransferTransaction | MassTransferTransaction  => 
+        sendTokens.assetId == stoAssetId
+        &&
+        startHeight <= height && height <= finishHeight
+    case other => throw()
+
+}

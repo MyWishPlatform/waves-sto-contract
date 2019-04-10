@@ -1,0 +1,11 @@
+{
+  "name": "waves_sto_contract",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:MyWishPlatform/waves-sto-contract.git",
+  "author": "Maksim Strenk <ephdtrg@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "c-preprocessor": "^0.2.12"
+  }
+}

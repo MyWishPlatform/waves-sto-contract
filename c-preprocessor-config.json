@@ -1,0 +1,10 @@
+{
+    "constants": {
+      "D_MANAGEMENT_ADDRESS_PK": "2z4uWCCsgZojrCqNmMivHEgF8kgQw9zqtWP2sxTuEhdg",
+      "D_COLD_VAULT_PK": "BdWLiaGJQPZeyuYFZMhkcdAJ5roPGvdDrJat5MZtB457",
+      "D_START_HEIGHT": 300000,
+      "D_FINISH_HEIGHT": 700000,
+      "D_RATE": 1000,
+      "D_WHITELIST": true
+    }
+}
