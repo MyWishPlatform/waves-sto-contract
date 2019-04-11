@@ -7,5 +7,8 @@
   "license": "MIT",
   "dependencies": {
     "c-preprocessor": "^0.2.12"
+  },
+  "scripts": {
+    "preprocess-contract": "./preprocess-contract.sh"
   }
 }

@@ -4,18 +4,38 @@ let stoManagementAddress = addressFromPublicKey(stoManagementAddressPK)
 let stoColdVaultAddress = addressFromPublicKey(stoColdVaultAddressPK)
 let stoAssetId = '6Y7Ee8VDZYdHzD83mrH6tJPXnv7NansZ6ugPdMpBJfEU'
 let tokenRate = D_RATE
-let hardCap = 100000000000
-let softCap = 500000000000
-let stoRaised = 0
-let startHeight = D_START_HEIGHT
-let finishHeight = D_FINISH_HEIGHT
 let whitelist = D_WHITELIST
-
+let token = base58'D_ASSET_ID'
+let tokenRate = D_RATE
+let softCapWaves = D_SOFT_CAP_WAVES
+let hardCapWaves = D_HARD_CAP_WAVES
+let startDate = D_START_DATE
+let endDate = D_FINISH_DATE
+ 
+let this = extract(tx.sender)
+ 
 match tx {
-    case sendTokens:TransferTransaction | MassTransferTransaction  => 
-        sendTokens.assetId == stoAssetId
-        &&
-        startHeight <= height && height <= finishHeight
-    case other => throw()
+  case sendTokens:TransferTransaction =>
+    let requestedAmount = sendTokens.amount
+    let amountBelowHardCap = requestedAmount <= (hardCapWaves / tokenRate)
+    let leftToHardcap = hardCapWaves - wavesBalance(this)
+    let amountBelowRemainder = requestedAmount <= (hardCapWaves / tokenRate)
+    let correctAsset = sendTokens.assetId == token
+    let afterStart = sendTokens.timestamp >= startDate
+    let beforeEnd = sendTokens.timestamp <= endDate
+  
+    let buyTokensTx = transactionById(sendTokens.proofs[1])
+    let buyTokensTxHeight = extract(transactionHeightById(sendTokens.proofs[1]))
+    
+    match buyTokensTx {
+      case buyTokens : TransferTransaction =>
+        let sendedAmount = buyTokens.amount
+        let correctAmount = requestedAmount <= (sendedAmount / tokenRate)
 
+        correctAsset && correctAmount
+        && amountBelowHardCap && amountBelowRemainder
+        && afterStart && beforeEnd
+      case _ => false
+    }
+case _ => false
 }
