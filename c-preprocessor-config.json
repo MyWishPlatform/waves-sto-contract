@@ -1,6 +1,5 @@
 {
     "constants": {
-      "D_MANAGEMENT_ADDRESS_PK": "2z4uWCCsgZojrCqNmMivHEgF8kgQw9zqtWP2sxTuEhdg",
       "D_COLD_VAULT_PK": "BdWLiaGJQPZeyuYFZMhkcdAJ5roPGvdDrJat5MZtB457",
       "D_ASSET_ID": "CxfjjmAehNR1WTX1oP8HUnSoTgSMece8g2krmQ1nRtZx",
       "D_START_DATE": 1554776463,
