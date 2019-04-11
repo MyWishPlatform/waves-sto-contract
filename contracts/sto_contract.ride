@@ -1,4 +1,4 @@
-let coldVault = addressFromString("3N5xW5oiUQGApKw7tXLZJhD9PFGY4xffw7a")
+let coldVault = addressFromString("D_COLD_VAULT_ADDR")
 let token = base58'D_ASSET_ID'
 let tokenRate = D_RATE
 let softCapWaves = D_SOFT_CAP_WAVES
