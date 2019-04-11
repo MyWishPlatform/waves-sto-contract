@@ -1,16 +1,11 @@
-let stoManagementAddressPK = base58'D_MANAGEMENT_ADDRESS_PK'
-let stoColdVaultAddressPK = base58'D_COLD_VAULT_PK'
-let stoManagementAddress = addressFromPublicKey(stoManagementAddressPK)
-let stoColdVaultAddress = addressFromPublicKey(stoColdVaultAddressPK)
-let stoAssetId = '6Y7Ee8VDZYdHzD83mrH6tJPXnv7NansZ6ugPdMpBJfEU'
-let tokenRate = D_RATE
-let whitelist = D_WHITELIST
+let coldVault = addressFromString("3N5xW5oiUQGApKw7tXLZJhD9PFGY4xffw7a")
 let token = base58'D_ASSET_ID'
 let tokenRate = D_RATE
 let softCapWaves = D_SOFT_CAP_WAVES
 let hardCapWaves = D_HARD_CAP_WAVES
 let startDate = D_START_DATE
 let endDate = D_FINISH_DATE
+let whitelist = D_WHITELIST
  
 let this = extract(tx.sender)
  

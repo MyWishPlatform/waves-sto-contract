@@ -1,6 +1,6 @@
 {
     "constants": {
-      "D_COLD_VAULT_PK": "BdWLiaGJQPZeyuYFZMhkcdAJ5roPGvdDrJat5MZtB457",
+      "D_COLD_VAULT_ADDR": "BdWLiaGJQPZeyuYFZMhkcdAJ5roPGvdDrJat5MZtB457",
       "D_ASSET_ID": "CxfjjmAehNR1WTX1oP8HUnSoTgSMece8g2krmQ1nRtZx",
       "D_START_DATE": 1554776463,
       "D_FINISH_DATE": 1557368463,
