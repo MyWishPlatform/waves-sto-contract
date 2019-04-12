@@ -1,3 +1,4 @@
+let managementAddressPubkey = base58'D_MANAGEMENT_PUBKEY'
 let coldVault = addressFromString("D_COLD_VAULT_ADDR")
 let token = base58'D_ASSET_ID'
 let tokenRate = D_RATE
@@ -32,5 +33,9 @@ match tx {
         && afterStart && beforeEnd
       case _ => false
     }
+case saveWhitelist:DataTransaction =>
+    let correctFields = size(saveWhitelist.data) == 1
+    let correctSignature = sigVerify(saveWhitelist.bodyBytes, saveWhitelst.proofs[0], managementAddressPubkey)
+    correctFields && correctSignature
 case _ => false
 }

@@ -1,5 +1,6 @@
 {
     "constants": {
+      "D_MANAGEMENT_PUBKEY": "CNTD3tkvdZf9G7nFgtGbz3WR2ty3wdpn4cJdntNnBYQd",
       "D_COLD_VAULT_ADDR": "BdWLiaGJQPZeyuYFZMhkcdAJ5roPGvdDrJat5MZtB457",
       "D_ASSET_ID": "CxfjjmAehNR1WTX1oP8HUnSoTgSMece8g2krmQ1nRtZx",
       "D_START_DATE": 1554776463,
