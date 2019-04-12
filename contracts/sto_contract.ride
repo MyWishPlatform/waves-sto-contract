@@ -35,7 +35,7 @@ match tx {
     }
 case saveWhitelist:DataTransaction =>
     let correctFields = size(saveWhitelist.data) == 1
-    let correctSignature = sigVerify(saveWhitelist.bodyBytes, saveWhitelst.proofs[0], managementAddressPubkey)
+    let correctSignature = sigVerify(saveWhitelist.bodyBytes, saveWhitelist.proofs[0], managementAddressPubkey)
     correctFields && correctSignature
 case _ => false
 }
