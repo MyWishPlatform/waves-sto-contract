@@ -1,7 +1,7 @@
 {
     "constants": {
       "D_MANAGEMENT_PUBKEY": "CNTD3tkvdZf9G7nFgtGbz3WR2ty3wdpn4cJdntNnBYQd",
-      "D_COLD_VAULT_ADDR": "BdWLiaGJQPZeyuYFZMhkcdAJ5roPGvdDrJat5MZtB457",
+      "D_COLD_VAULT_ADDR": "3Mq9ufeaJRKgDifAxEmoGYyUm13x9vDd98q",
       "D_ASSET_ID": "CxfjjmAehNR1WTX1oP8HUnSoTgSMece8g2krmQ1nRtZx",
       "D_START_DATE": 1554776463,
       "D_FINISH_DATE": 1557368463,
