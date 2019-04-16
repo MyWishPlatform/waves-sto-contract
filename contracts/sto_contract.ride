@@ -31,11 +31,29 @@ match tx {
         correctAsset && correctAmount
         && amountBelowHardCap && amountBelowRemainder
         && afterStart && beforeEnd
-      case _ => false
+      case _ => throw("attached transaction is invalid")
     }
-case saveWhitelist:DataTransaction =>
-    let correctFields = size(saveWhitelist.data) == 1
-    let correctSignature = sigVerify(saveWhitelist.bodyBytes, saveWhitelist.proofs[0], managementAddressPubkey)
-    correctFields && correctSignature
-case _ => false
+case dataTx:DataTransaction =>
+    if (size(dataTx.data) == 1) then
+    {
+        let dataKey = extract(dataTx.data[0].key)
+        let dataValue = extract(dataTx.data[0].value)
+        #accept whitelist data on contract
+        if (dataKey == "WhitelistAddresses") then true
+        #validate finalization
+        else if (dataKey == "Finalized" && dataValue == "true") then
+            {
+                let afterEnd = dataTx.timestamp >= endDate
+                let goalReached = wavesBalance(this) >= softCapWaves
+
+                afterEnd && goalReached
+            }
+        else
+            throw("STO not finished yet")
+    }
+    else
+        throw("Invalid data transaction")
+
+case changeScript:SetScriptTransaction => true
+case _ => throw("This type of transaction is not supported by account-script")
 }
