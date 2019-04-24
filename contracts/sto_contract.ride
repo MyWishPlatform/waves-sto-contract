@@ -1,59 +1,127 @@
+{-# STDLIB_VERSION 3 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+
 let managementAddressPubkey = base58'D_MANAGEMENT_PUBKEY'
-let coldVault = addressFromString("D_COLD_VAULT_ADDR")
+let coldVault = extract(addressFromString("D_COLD_VAULT_ADDR"))
 let token = base58'D_ASSET_ID'
 let tokenRate = D_RATE
 let softCapWaves = D_SOFT_CAP_WAVES
 let hardCapWaves = D_HARD_CAP_WAVES
+let minInvestmentWaves = D_MIN_INVESTMENT
+let maxInvestmentWaves = D_MAX_INVESTMENT
 let startDate = D_START_DATE
 let endDate = D_FINISH_DATE
 let whitelist = D_WHITELIST
- 
-let this = extract(tx.sender)
- 
-match tx {
-  case sendTokens:TransferTransaction =>
-    let requestedAmount = sendTokens.amount
-    let amountBelowHardCap = requestedAmount <= (hardCapWaves / tokenRate)
-    let leftToHardcap = hardCapWaves - wavesBalance(this)
-    let amountBelowRemainder = requestedAmount <= (hardCapWaves / tokenRate)
-    let correctAsset = sendTokens.assetId == token
-    let afterStart = sendTokens.timestamp >= startDate
-    let beforeEnd = sendTokens.timestamp <= endDate
-  
-    let buyTokensTx = transactionById(sendTokens.proofs[1])
-    let buyTokensTxHeight = extract(transactionHeightById(sendTokens.proofs[1]))
-    
-    match buyTokensTx {
-      case buyTokens : TransferTransaction =>
-        let sendedAmount = buyTokens.amount
-        let correctAmount = requestedAmount <= (sendedAmount / tokenRate)
 
-        correctAsset && correctAmount
-        && amountBelowHardCap && amountBelowRemainder
-        && afterStart && beforeEnd
-      case _ => throw("attached transaction is invalid")
+ 
+@Callable(i)
+func buyTokens() = {
+    let sendedAmount = extract(i.payment).amount
+    if (sendedAmount <= 0) then throw("Cannot accept zero value payments")
+    else if (sendedAmount < minInvestmentWaves) then throw("Attached payment is below minimal price")
+    else if (sendedAmount > maxInvestmentWaves) then throw("Attached payment is above maximum price")
+    else if (height < startDate) then throw("STO is not started yet")
+    else if (height > endDate) then throw("STO is already finished")
+    else {
+        let wavesRaised = wavesBalance(coldVault)
+        if ((wavesRaised + sendedAmount) >= hardCapWaves) then 
+            throw("Attached payment overflows hardcap")
+        else {
+            let tokenAmount = (sendedAmount / tokenRate)
+
+            TransferSet([
+                ScriptTransfer(coldVault, sendedAmount, unit),
+                ScriptTransfer(i.caller, tokenAmount, token)
+            ])
+        }
     }
-case dataTx:DataTransaction =>
-    if (size(dataTx.data) == 1) then
-    {
-        let dataKey = extract(dataTx.data[0].key)
-        let dataValue = extract(dataTx.data[0].value)
-        #accept whitelist data on contract
-        if (dataKey == "WhitelistAddresses") then true
-        #validate finalization
-        else if (dataKey == "Finalized" && dataValue == "true") then
-            {
-                let afterEnd = dataTx.timestamp >= endDate
-                let goalReached = wavesBalance(this) >= softCapWaves
+}
 
-                afterEnd && goalReached
-            }
-        else
-            throw("STO not finished yet")
+@Callable(i)
+func finalize() = {
+    let isReachedSoftCap = wavesBalance(this) >= softCapWaves
+    let stoFinished = height >= endDate
+    if (isReachedSoftCap || stoFinished) then {
+      WriteSet([
+        DataEntry("finalized", true)
+      ])
     }
     else
-        throw("Invalid data transaction")
+        throw("STO not finished yet")
+}
 
-case changeScript:SetScriptTransaction => true
-case _ => throw("This type of transaction is not supported by account-script")
+@Callable(i)
+func setStartTime(newStartTime: Int) = {
+    if (newStartTime > endDate) then throw("Start date must be lower than end date")
+    # else if (newStartTime <= height) then throw("Cannot set time to past")
+    else {
+        WriteSet([
+          DataEntry("startDate", newStartTime)
+        ])
+    }
+}
+
+@Callable(i)
+func setEndTime(newEndTime: Int) = {
+    if (newEndTime < startDate) then throw("End date must be higher than start date")
+    else if (newEndTime <= height) then throw("Cannot set time to past")
+    else {
+        WriteSet([
+          DataEntry("endDate", newEndTime)
+        ])
+    }
+}
+
+@Callable(i)
+func setStartAndEndTimes(newStartTime: Int, newEndTime: Int) = {
+    if (newStartTime > endDate) then throw("Start date must be lower than end date")
+    else if (newEndTime < startDate) then throw("End date must be higher than start date")
+    # else if ((newStartTime <= height) then throw("Cannot set time to past")
+    else if (newEndTime <= height) then throw("Cannot set time to past")
+    else {  
+        WriteSet([
+            DataEntry("startDate", newStartTime),
+            DataEntry("endDate", newEndTime)
+        ])
+    }
+}
+
+@Callable(i)
+func setMinInvestment(newValue: Int) = {
+    WriteSet([
+      DataEntry("minInvestment", newValue)
+    ])
+}
+
+@Callable(i)
+func setMaxInvestment(newValue: Int) = {
+  WriteSet([
+    DataEntry("maxInvestment", newValue)
+  ])
+}
+
+@Callable(i)
+func setWhitelistAddresses(investors: String) = {
+    WriteSet([
+      DataEntry("whitelistedInvestors", investors)
+    ])
+}
+
+@Callable(i)
+func addToWhitelist(investor: String) = {
+    let primaryKey = "whitelistedInvestor"
+    let fullKey = primaryKey + "-" + investor
+    WriteSet([
+        DataEntry(fullKey, true)
+    ])
+}
+
+@Callable(i)
+func removeFromWhitelist(investor: String) = {
+    let primaryKey = "whitelistedInvestor"
+    let fullKey = primaryKey + "-" + investor
+    WriteSet([
+        DataEntry(fullKey, false)
+    ])
 }

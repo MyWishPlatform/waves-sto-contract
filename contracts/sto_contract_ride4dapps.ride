@@ -1,0 +1,12 @@
+let managementAddressPubkey = base58'D_MANAGEMENT_PUBKEY'
+let coldVault = addressFromString("D_COLD_VAULT_ADDR")
+let token = base58'D_ASSET_ID'
+let tokenRate = D_RATE
+let softCapWaves = D_SOFT_CAP_WAVES
+let hardCapWaves = D_HARD_CAP_WAVES
+let startDate = D_START_DATE
+let endDate = D_FINISH_DATE
+let whitelist = D_WHITELIST
+
+
+}

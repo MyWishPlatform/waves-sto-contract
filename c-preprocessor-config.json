@@ -1,14 +1,16 @@
 {
     "constants": {
-      "D_MANAGEMENT_PUBKEY": "CNTD3tkvdZf9G7nFgtGbz3WR2ty3wdpn4cJdntNnBYQd",
+      "D_MANAGEMENT_PUBKEY": "4Ntv2yewncgyhckCugAc4FnjuDvzk9xzwbsiuJhJCJak",
       "D_COLD_VAULT_ADDR": "3Mq9ufeaJRKgDifAxEmoGYyUm13x9vDd98q",
-      "D_ASSET_ID": "CxfjjmAehNR1WTX1oP8HUnSoTgSMece8g2krmQ1nRtZx",
-      "D_START_DATE": 1554776463,
-      "D_FINISH_DATE": 1557368463,
+      "D_ASSET_ID": "ynngf2dfDC5vFv12ereASkqjvrTD1BZoazM1v9gBqrv",
+      "D_START_DATE": 550000,
+      "D_FINISH_DATE": 600000,
       "D_RATE": "1000",
       "D_WHITELIST": true,
       "D_SOFT_CAP_WAVES": "500000000000",
-      "D_HARD_CAP_WAVES": "1000000000000"
+      "D_HARD_CAP_WAVES": "1000000000000",
+      "D_MIN_INVESTMENT": "10",
+      "D_MAX_INVESTMENT": "10000000000000000"
     }
 }
 
