@@ -10,19 +10,21 @@ let softCapWaves = D_SOFT_CAP_WAVES
 let hardCapWaves = D_HARD_CAP_WAVES
 let minInvestmentWaves = D_MIN_INVESTMENT
 let maxInvestmentWaves = D_MAX_INVESTMENT
-let startDate = D_START_DATE
-let endDate = D_FINISH_DATE
+let startHeight = D_START_DATE
+let endHeight = D_FINISH_DATE
 let whitelist = D_WHITELIST
 
  
 @Callable(i)
 func buyTokens() = {
+    let currentInvestor = i.caller.bytes
+   
     let sendedAmount = extract(i.payment).amount
     if (sendedAmount <= 0) then throw("Cannot accept zero value payments")
     else if (sendedAmount < minInvestmentWaves) then throw("Attached payment is below minimal price")
     else if (sendedAmount > maxInvestmentWaves) then throw("Attached payment is above maximum price")
-    else if (height < startDate) then throw("STO is not started yet")
-    else if (height > endDate) then throw("STO is already finished")
+    else if (height < startHeight) then throw("STO is not started yet")
+    else if (height > endHeight) then throw("STO is already finished")
     else {
         let wavesRaised = wavesBalance(coldVault)
         if ((wavesRaised + sendedAmount) >= hardCapWaves) then 
@@ -41,7 +43,7 @@ func buyTokens() = {
 @Callable(i)
 func finalize() = {
     let isReachedSoftCap = wavesBalance(this) >= softCapWaves
-    let stoFinished = height >= endDate
+    let stoFinished = height >= endHeight
     if (isReachedSoftCap || stoFinished) then {
       WriteSet([
         DataEntry("finalized", true)
@@ -53,30 +55,30 @@ func finalize() = {
 
 @Callable(i)
 func setStartTime(newStartTime: Int) = {
-    if (newStartTime > endDate) then throw("Start date must be lower than end date")
+    if (newStartTime > endHeight) then throw("Start date must be lower than end date")
     # else if (newStartTime <= height) then throw("Cannot set time to past")
     else {
         WriteSet([
-          DataEntry("startDate", newStartTime)
+          DataEntry("startHeight", newStartTime)
         ])
     }
 }
 
 @Callable(i)
 func setEndTime(newEndTime: Int) = {
-    if (newEndTime < startDate) then throw("End date must be higher than start date")
+    if (newEndTime < startHeight) then throw("End date must be higher than start date")
     else if (newEndTime <= height) then throw("Cannot set time to past")
     else {
         WriteSet([
-          DataEntry("endDate", newEndTime)
+          DataEntry("endHeight", newEndTime)
         ])
     }
 }
 
 @Callable(i)
 func setStartAndEndTimes(newStartTime: Int, newEndTime: Int) = {
-    if (newStartTime > endDate) then throw("Start date must be lower than end date")
-    else if (newEndTime < startDate) then throw("End date must be higher than start date")
+    if (newStartTime > endHeight) then throw("Start date must be lower than end date")
+    else if (newEndTime < startHeight) then throw("End date must be higher than start date")
     # else if ((newStartTime <= height) then throw("Cannot set time to past")
     else if (newEndTime <= height) then throw("Cannot set time to past")
     else {  
