@@ -105,25 +105,99 @@ func setMaxInvestment(newValue: Int) = {
 
 @Callable(i)
 func setWhitelistAddresses(investors: String) = {
+    let whitelistDataKey = "whitelistedInvestors"
+    let whitelist = split(investors, ",")
+    let whitelistSize = size(whitelist)
+    let totalInvKey = "totalInvestors"
+
     WriteSet([
-      DataEntry("whitelistedInvestors", investors)
+      DataEntry(whitelistDataKey, investors),
+      DataEntry(totalInvKey, whitelistSize)
     ])
 }
+
 
 @Callable(i)
 func addToWhitelist(investor: String) = {
-    let primaryKey = "whitelistedInvestor"
-    let fullKey = primaryKey + "-" + investor
-    WriteSet([
-        DataEntry(fullKey, true)
+    let statePrefix = "whitelistedInvestor"
+    let stateKey = statePrefix + "-" + investor
+    let whitelistDataKey = "whitelistedInvestors"
+    let whitelistString = getStringValue(this, whitelistDataKey)
+    let totalInvKey = "totalInvestors"
+
+    if (isDefined(whitelistString))
+    then {
+        let whitelist = split(whitelistString, ",")
+        let newWhitelistString = whitelistString + "," + investor
+
+        WriteSet([
+            DataEntry(stateKey, true),
+            DataEntry(totalInvKey, size(whitelist) + 1),
+            DataEntry(whitelistDataKey, newWhitelistString)
+        ])
+    }
+    else {
+        WriteSet([
+            DataEntry(stateKey, true),
+            DataEntry(totalInvKey, 1),
+            DataEntry(whitelistDataKey, investor)
     ])
+    }
 }
+
 
 @Callable(i)
 func removeFromWhitelist(investor: String) = {
-    let primaryKey = "whitelistedInvestor"
-    let fullKey = primaryKey + "-" + investor
-    WriteSet([
-        DataEntry(fullKey, false)
-    ])
+    let whitelistDataKey = "whitelistedInvestors"
+    let whitelistString = getStringValue(this, whitelistDataKey)
+    let whitelistStringSize = size(whitelistString)
+    if (!isDefined(whitelistString)) then throw("Whitelist is empty")
+    else {
+        let whitelist = split(whitelistString, ",")
+        let investorsCount = size(whitelist)
+
+        let statePrefix = "whitelistedInvestor"
+        let stateKey = statePrefix + "-" + investor
+        let totalInvKey = "totalInvestors"
+
+        let addressSize = size(investor)
+        let addressIndex = extract(indexOf(whitelistString, investor))
+        if (addressIndex == 0) then {
+            let prefixSize = addressSize + 1
+            let newWhitelistString = drop(whitelistString, prefixSize)
+            WriteSet([
+                DataEntry(stateKey, false),
+                DataEntry(totalInvKey, investorsCount - 1),
+                DataEntry(whitelistDataKey, newWhitelistString)
+            ])
+        } else if (addressIndex + addressSize == whitelistStringSize) then {
+            #let prefixSize = whitelistStringSize - addressSize
+            #let newWhitelistString = take(whitelistString, prefixSize)
+            let suffixSize = addressSize + 1
+            let newWhitelistString = dropRight(whitelistString, suffixSize)
+            WriteSet([
+                DataEntry(stateKey, false),
+                DataEntry(totalInvKey, investorsCount - 1),
+                DataEntry(whitelistDataKey, newWhitelistString)
+            ])
+        } else if whitelistStringSize == addressSize then {
+            WriteSet([
+                DataEntry(stateKey, false),
+                DataEntry(totalInvKey, 0),
+                DataEntry(whitelistDataKey, "")
+            ])
+        } else {
+            let prefixSize = addressIndex
+            let newPrefix = take(whitelistString, prefixSize)
+            let suffixSize = whitelistStringSize - (addressIndex + addressSize + 1)
+            #let suffixSize = addressIndex + addressSize + 1
+            let newSuffix = takeRight(whitelistString, suffixSize)
+            let newWhitelistString = newPrefix + newSuffix
+            WriteSet([
+                DataEntry(stateKey, false),
+                DataEntry(totalInvKey, investorsCount - 1),
+                DataEntry(whitelistDataKey, newWhitelistString)
+            ])
+        }
+    }
 }
