@@ -2,7 +2,7 @@
 {-# CONTENT_TYPE DAPP #-}
 {-# SCRIPT_TYPE ACCOUNT #-}
 
-let managementAddressPubkey = base58'D_MANAGEMENT_PUBKEY'
+let managementAddress = base58'D_MANAGEMENT_ADDR'
 let coldVault = extract(addressFromString("D_COLD_VAULT_ADDR"))
 let token = base58'D_ASSET_ID'
 let tokenRate = D_RATE
