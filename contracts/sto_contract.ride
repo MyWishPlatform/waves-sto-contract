@@ -17,40 +17,49 @@ let whitelist = D_WHITELIST
  
 @Callable(i)
 func buyTokens() = {
-    let currentInvestor = i.caller.bytes
-   
-    let sendedAmount = extract(i.payment).amount
-    if (sendedAmount <= 0) then throw("Cannot accept zero value payments")
-    else if (sendedAmount < minInvestmentWaves) then throw("Attached payment is below minimal price")
-    else if (sendedAmount > maxInvestmentWaves) then throw("Attached payment is above maximum price")
-    else if (height < startHeight) then throw("STO is not started yet")
-    else if (height > endHeight) then throw("STO is already finished")
+    let investorAddress = toBase58String(i.caller.bytes)
+    let whitelistString = getStringValue(this, "whitelistedInvestors")
+    let listIndex = indexOf(whitelistString, investorAddress)
+    if listIndex == unit then throw("Only for whitelisted")
     else {
-        let wavesRaised = wavesBalance(coldVault)
-        if ((wavesRaised + sendedAmount) >= hardCapWaves) then 
-            throw("Attached payment overflows hardcap")
+        let sendedAmount = extract(i.payment).amount
+        if (sendedAmount <= 0) then throw("Cannot accept zero value payments")
+        else if (sendedAmount < minInvestmentWaves) then throw("Attached payment is below minimal price")
+        else if (sendedAmount > maxInvestmentWaves) then throw("Attached payment is above maximum price")
+        else if (height < startDate) then throw("STO is not started yet")
+        else if (height > endDate) then throw("STO is already finished")
         else {
-            let tokenAmount = (sendedAmount / tokenRate)
+            let wavesRaised = wavesBalance(coldVault)
+            if ((wavesRaised + sendedAmount) >= hardCapWaves) then 
+                throw("Attached payment overflows hardcap")
+            else {
+                let tokenAmount = (sendedAmount / tokenRate)
 
-            TransferSet([
-                ScriptTransfer(coldVault, sendedAmount, unit),
-                ScriptTransfer(i.caller, tokenAmount, token)
-            ])
+                TransferSet([
+                    ScriptTransfer(coldVault, sendedAmount, unit),
+                    ScriptTransfer(i.caller, tokenAmount, token)
+                ])
+            }
         }
     }
 }
 
 @Callable(i)
 func finalize() = {
-    let isReachedSoftCap = wavesBalance(this) >= softCapWaves
-    let stoFinished = height >= endHeight
-    if (isReachedSoftCap || stoFinished) then {
-      WriteSet([
-        DataEntry("finalized", true)
-      ])
+    let caller = toBase58String(i.caller.bytes)
+    if caller != toBase58String(managementAddress) then {
+        throw("Only for administration")
+    } else {
+        let isReachedSoftCap = wavesBalance(coldVault) >= softCapWaves
+        let stoFinished = height >= endDate
+        if (isReachedSoftCap || stoFinished) then {
+            WriteSet([
+                DataEntry("finalized", true)
+            ])
+        } else {
+            throw("STO not finished yet")
+        }
     }
-    else
-        throw("STO not finished yet")
 }
 
 @Callable(i)
@@ -171,8 +180,6 @@ func removeFromWhitelist(investor: String) = {
                 DataEntry(whitelistDataKey, newWhitelistString)
             ])
         } else if (addressIndex + addressSize == whitelistStringSize) then {
-            #let prefixSize = whitelistStringSize - addressSize
-            #let newWhitelistString = take(whitelistString, prefixSize)
             let suffixSize = addressSize + 1
             let newWhitelistString = dropRight(whitelistString, suffixSize)
             WriteSet([
@@ -190,7 +197,6 @@ func removeFromWhitelist(investor: String) = {
             let prefixSize = addressIndex
             let newPrefix = take(whitelistString, prefixSize)
             let suffixSize = whitelistStringSize - (addressIndex + addressSize + 1)
-            #let suffixSize = addressIndex + addressSize + 1
             let newSuffix = takeRight(whitelistString, suffixSize)
             let newWhitelistString = newPrefix + newSuffix
             WriteSet([
