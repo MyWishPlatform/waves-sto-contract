@@ -21,9 +21,11 @@ func onlyManager(callerBytes: ByteVector) = {
     if caller != managementAddressString then false else true
 }
 
+
 func hasStarted() = {
     if height < startHeight then false else true
 }
+
 
 func hasEnded() = {
     if height < endHeight then false else true
@@ -59,6 +61,7 @@ func buyTokens() = {
     }
 }
 
+
 @Callable(i)
 func finalize() = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
@@ -75,6 +78,7 @@ func finalize() = {
     }
 }
 
+
 @Callable(i)
 func setStartTime(newStartTime: Int) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
@@ -89,6 +93,7 @@ func setStartTime(newStartTime: Int) = {
     }
 }
 
+
 @Callable(i)
 func setEndTime(newEndTime: Int) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
@@ -102,6 +107,7 @@ func setEndTime(newEndTime: Int) = {
         }
     }
 }
+
 
 @Callable(i)
 func setStartAndEndTimes(newStartTime: Int, newEndTime: Int) = {
@@ -120,6 +126,7 @@ func setStartAndEndTimes(newStartTime: Int, newEndTime: Int) = {
     }
 }
 
+
 @Callable(i)
 func setMinInvestment(newValue: Int) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
@@ -130,6 +137,7 @@ func setMinInvestment(newValue: Int) = {
     }
 }
 
+
 @Callable(i)
 func setMaxInvestment(newValue: Int) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
@@ -139,6 +147,7 @@ func setMaxInvestment(newValue: Int) = {
         ])
     }
 }
+
 
 @Callable(i)
 func setWhitelistAddresses(investors: String) = {
@@ -183,11 +192,10 @@ func addToWhitelist(investor: String) = {
                 DataEntry(stateKey, true),
                 DataEntry(totalInvKey, 1),
                 DataEntry(whitelistDataKey, investor)
-        ])
+            ])
         }
     }
 }
-
 
 
 @Callable(i)
