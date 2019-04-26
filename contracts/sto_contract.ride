@@ -14,7 +14,7 @@ let startHeight = D_START_DATE
 let endHeight = D_FINISH_DATE
 let whitelist = D_WHITELIST
 
- 
+
 @Callable(i)
 func buyTokens() = {
     let investorAddress = toBase58String(i.caller.bytes)
@@ -26,11 +26,11 @@ func buyTokens() = {
         if (sendedAmount <= 0) then throw("Cannot accept zero value payments")
         else if (sendedAmount < minInvestmentWaves) then throw("Attached payment is below minimal price")
         else if (sendedAmount > maxInvestmentWaves) then throw("Attached payment is above maximum price")
-        else if (height < startDate) then throw("STO is not started yet")
-        else if (height > endDate) then throw("STO is already finished")
+        else if (height < startHeight) then throw("STO is not started yet")
+        else if (height > endHeight) then throw("STO is already finished")
         else {
             let wavesRaised = wavesBalance(coldVault)
-            if ((wavesRaised + sendedAmount) >= hardCapWaves) then 
+            if ((wavesRaised + sendedAmount) >= hardCapWaves) then
                 throw("Attached payment overflows hardcap")
             else {
                 let tokenAmount = (sendedAmount / tokenRate)
@@ -51,7 +51,7 @@ func finalize() = {
         throw("Only for administration")
     } else {
         let isReachedSoftCap = wavesBalance(coldVault) >= softCapWaves
-        let stoFinished = height >= endDate
+        let stoFinished = height >= endHeight
         if (isReachedSoftCap || stoFinished) then {
             WriteSet([
                 DataEntry("finalized", true)
@@ -64,146 +64,187 @@ func finalize() = {
 
 @Callable(i)
 func setStartTime(newStartTime: Int) = {
-    if (newStartTime > endHeight) then throw("Start date must be lower than end date")
-    # else if (newStartTime <= height) then throw("Cannot set time to past")
-    else {
-        WriteSet([
-          DataEntry("startHeight", newStartTime)
-        ])
+    let caller = toBase58String(i.caller.bytes)
+    if caller != toBase58String(managementAddress) then {
+        throw("Only for administration")
+    } else {
+        if (newStartTime > endHeight) then throw("Start date must be lower than end date")
+        # else if (newStartTime <= height) then throw("Cannot set time to past")
+        else {
+            WriteSet([
+                DataEntry("startHeight", newStartTime)
+            ])
+        }
     }
 }
 
 @Callable(i)
 func setEndTime(newEndTime: Int) = {
-    if (newEndTime < startHeight) then throw("End date must be higher than start date")
-    else if (newEndTime <= height) then throw("Cannot set time to past")
-    else {
-        WriteSet([
-          DataEntry("endHeight", newEndTime)
-        ])
+    let caller = toBase58String(i.caller.bytes)
+    if caller != toBase58String(managementAddress) then {
+        throw("Only for administration")
+    } else {
+        if (newEndTime < startHeight) then throw("End date must be higher than start date")
+        else if (newEndTime <= height) then throw("Cannot set time to past")
+        else {
+            WriteSet([
+                DataEntry("endHeight", newEndTime)
+            ])
+        }
     }
 }
 
 @Callable(i)
 func setStartAndEndTimes(newStartTime: Int, newEndTime: Int) = {
-    if (newStartTime > endHeight) then throw("Start date must be lower than end date")
-    else if (newEndTime < startHeight) then throw("End date must be higher than start date")
-    # else if ((newStartTime <= height) then throw("Cannot set time to past")
-    else if (newEndTime <= height) then throw("Cannot set time to past")
-    else {  
-        WriteSet([
-            DataEntry("startDate", newStartTime),
-            DataEntry("endDate", newEndTime)
-        ])
+    let caller = toBase58String(i.caller.bytes)
+    if caller != toBase58String(managementAddress) then {
+        throw("Only for administration")
+    } else {
+        if (newStartTime > endHeight) then throw("Start date must be lower than end date")
+        else if (newEndTime < startHeight) then throw("End date must be higher than start date")
+        # else if ((newStartTime <= height) then throw("Cannot set time to past")
+        else if (newEndTime <= height) then throw("Cannot set time to past")
+        else {
+            WriteSet([
+                DataEntry("startDate", newStartTime),
+                DataEntry("endDate", newEndTime)
+            ])
+        }
     }
 }
 
 @Callable(i)
 func setMinInvestment(newValue: Int) = {
-    WriteSet([
-      DataEntry("minInvestment", newValue)
-    ])
+    let caller = toBase58String(i.caller.bytes)
+    if caller != toBase58String(managementAddress) then {
+        throw("Only for administration")
+    } else {
+        WriteSet([
+            DataEntry("minInvestment", newValue)
+        ])
+    }
 }
 
 @Callable(i)
 func setMaxInvestment(newValue: Int) = {
-  WriteSet([
-    DataEntry("maxInvestment", newValue)
-  ])
+    let caller = toBase58String(i.caller.bytes)
+    if caller != toBase58String(managementAddress) then {
+        throw("Only for administration")
+    } else {
+        WriteSet([
+            DataEntry("maxInvestment", newValue)
+        ])
+    }
 }
 
 @Callable(i)
 func setWhitelistAddresses(investors: String) = {
-    let whitelistDataKey = "whitelistedInvestors"
-    let whitelist = split(investors, ",")
-    let whitelistSize = size(whitelist)
-    let totalInvKey = "totalInvestors"
+    let caller = toBase58String(i.caller.bytes)
+    if caller != toBase58String(managementAddress) then {
+        throw("Only for administration")
+    } else {
+        let whitelistDataKey = "whitelistedInvestors"
+        let whitelist = split(investors, ",")
+        let whitelistSize = size(whitelist)
+        let totalInvKey = "totalInvestors"
 
-    WriteSet([
-      DataEntry(whitelistDataKey, investors),
-      DataEntry(totalInvKey, whitelistSize)
-    ])
+        WriteSet([
+            DataEntry(whitelistDataKey, investors),
+            DataEntry(totalInvKey, whitelistSize)
+        ])
+    }
 }
 
 
 @Callable(i)
 func addToWhitelist(investor: String) = {
-    let statePrefix = "whitelistedInvestor"
-    let stateKey = statePrefix + "-" + investor
-    let whitelistDataKey = "whitelistedInvestors"
-    let whitelistString = getStringValue(this, whitelistDataKey)
-    let totalInvKey = "totalInvestors"
+    let caller = toBase58String(i.caller.bytes)
+    if caller != toBase58String(managementAddress) then {
+        throw("Only for administration")
+    } else {
 
-    if (isDefined(whitelistString))
-    then {
-        let whitelist = split(whitelistString, ",")
-        let newWhitelistString = whitelistString + "," + investor
+        let statePrefix = "whitelistedInvestor"
+        let stateKey = statePrefix + "-" + investor
+        let whitelistDataKey = "whitelistedInvestors"
+        let whitelistString = getStringValue(this, whitelistDataKey)
+        let totalInvKey = "totalInvestors"
 
-        WriteSet([
-            DataEntry(stateKey, true),
-            DataEntry(totalInvKey, size(whitelist) + 1),
-            DataEntry(whitelistDataKey, newWhitelistString)
+        if (isDefined(whitelistString))
+        then {
+            let whitelist = split(whitelistString, ",")
+            let newWhitelistString = whitelistString + "," + investor
+
+            WriteSet([
+                DataEntry(stateKey, true),
+                DataEntry(totalInvKey, size(whitelist) + 1),
+                DataEntry(whitelistDataKey, newWhitelistString)
+            ])
+        }
+        else {
+            WriteSet([
+                DataEntry(stateKey, true),
+                DataEntry(totalInvKey, 1),
+                DataEntry(whitelistDataKey, investor)
         ])
-    }
-    else {
-        WriteSet([
-            DataEntry(stateKey, true),
-            DataEntry(totalInvKey, 1),
-            DataEntry(whitelistDataKey, investor)
-    ])
+        }
     }
 }
 
 
 @Callable(i)
 func removeFromWhitelist(investor: String) = {
-    let whitelistDataKey = "whitelistedInvestors"
-    let whitelistString = getStringValue(this, whitelistDataKey)
-    let whitelistStringSize = size(whitelistString)
-    if (!isDefined(whitelistString)) then throw("Whitelist is empty")
-    else {
-        let whitelist = split(whitelistString, ",")
-        let investorsCount = size(whitelist)
+    let caller = toBase58String(i.caller.bytes)
+    if caller != toBase58String(managementAddress) then {
+        throw("Only for administration")
+    } else {
+        let whitelistDataKey = "whitelistedInvestors"
+        let whitelistString = getStringValue(this, whitelistDataKey)
+        let whitelistStringSize = size(whitelistString)
+        if (!isDefined(whitelistString)) then throw("Whitelist is empty")
+        else {
+            let whitelist = split(whitelistString, ",")
+            let investorsCount = size(whitelist)
 
-        let statePrefix = "whitelistedInvestor"
-        let stateKey = statePrefix + "-" + investor
-        let totalInvKey = "totalInvestors"
+            let statePrefix = "whitelistedInvestor"
+            let stateKey = statePrefix + "-" + investor
+            let totalInvKey = "totalInvestors"
 
-        let addressSize = size(investor)
-        let addressIndex = extract(indexOf(whitelistString, investor))
-        if (addressIndex == 0) then {
-            let prefixSize = addressSize + 1
-            let newWhitelistString = drop(whitelistString, prefixSize)
-            WriteSet([
-                DataEntry(stateKey, false),
-                DataEntry(totalInvKey, investorsCount - 1),
-                DataEntry(whitelistDataKey, newWhitelistString)
-            ])
-        } else if (addressIndex + addressSize == whitelistStringSize) then {
-            let suffixSize = addressSize + 1
-            let newWhitelistString = dropRight(whitelistString, suffixSize)
-            WriteSet([
-                DataEntry(stateKey, false),
-                DataEntry(totalInvKey, investorsCount - 1),
-                DataEntry(whitelistDataKey, newWhitelistString)
-            ])
-        } else if whitelistStringSize == addressSize then {
-            WriteSet([
-                DataEntry(stateKey, false),
-                DataEntry(totalInvKey, 0),
-                DataEntry(whitelistDataKey, "")
-            ])
-        } else {
-            let prefixSize = addressIndex
-            let newPrefix = take(whitelistString, prefixSize)
-            let suffixSize = whitelistStringSize - (addressIndex + addressSize + 1)
-            let newSuffix = takeRight(whitelistString, suffixSize)
-            let newWhitelistString = newPrefix + newSuffix
-            WriteSet([
-                DataEntry(stateKey, false),
-                DataEntry(totalInvKey, investorsCount - 1),
-                DataEntry(whitelistDataKey, newWhitelistString)
-            ])
+            let addressSize = size(investor)
+            let addressIndex = extract(indexOf(whitelistString, investor))
+            if (addressIndex == 0) then {
+                let prefixSize = addressSize + 1
+                let newWhitelistString = drop(whitelistString, prefixSize)
+                WriteSet([
+                    DataEntry(stateKey, false),
+                    DataEntry(totalInvKey, investorsCount - 1),
+                    DataEntry(whitelistDataKey, newWhitelistString)
+                ])
+            } else if (addressIndex + addressSize == whitelistStringSize) then {
+                let suffixSize = addressSize + 1
+                let newWhitelistString = dropRight(whitelistString, suffixSize)
+                WriteSet([
+                    DataEntry(stateKey, false),
+                    DataEntry(totalInvKey, investorsCount - 1),
+                    DataEntry(whitelistDataKey, newWhitelistString)
+                ])
+            } else if whitelistStringSize == addressSize then {
+                WriteSet([
+                    DataEntry(stateKey, false),
+                    DataEntry(totalInvKey, 0),
+                    DataEntry(whitelistDataKey, "")
+                ])
+            } else {
+                let prefixSize = addressIndex
+                let newPrefix = take(whitelistString, prefixSize)
+                let suffixSize = whitelistStringSize - (addressIndex + addressSize + 1)
+                let newSuffix = takeRight(whitelistString, suffixSize)
+                let newWhitelistString = newPrefix + newSuffix
+                WriteSet([
+                    DataEntry(stateKey, false),
+                    DataEntry(totalInvKey, investorsCount - 1),
+                    DataEntry(whitelistDataKey, newWhitelistString)
+                ])
+            }
         }
     }
 }
