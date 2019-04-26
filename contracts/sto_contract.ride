@@ -15,6 +15,21 @@ let endHeight = D_FINISH_DATE
 let whitelist = D_WHITELIST
 
 
+func onlyManager(callerBytes: ByteVector) = {
+    let caller = toBase58String(callerBytes)
+    let managementAddressString = toBase58String(managementAddress)
+    if caller != managementAddressString then false else true
+}
+
+func hasStarted() = {
+    if height < startHeight then false else true
+}
+
+func hasEnded() = {
+    if height < endHeight then false else true
+}
+
+
 @Callable(i)
 func buyTokens() = {
     let investorAddress = toBase58String(i.caller.bytes)
@@ -26,8 +41,8 @@ func buyTokens() = {
         if (sendedAmount <= 0) then throw("Cannot accept zero value payments")
         else if (sendedAmount < minInvestmentWaves) then throw("Attached payment is below minimal price")
         else if (sendedAmount > maxInvestmentWaves) then throw("Attached payment is above maximum price")
-        else if (height < startHeight) then throw("STO is not started yet")
-        else if (height > endHeight) then throw("STO is already finished")
+        else if !hasStarted() then throw("STO is not started yet")
+        else if hasEnded() then throw("STO is already finished")
         else {
             let wavesRaised = wavesBalance(coldVault)
             if ((wavesRaised + sendedAmount) >= hardCapWaves) then
@@ -46,10 +61,8 @@ func buyTokens() = {
 
 @Callable(i)
 func finalize() = {
-    let caller = toBase58String(i.caller.bytes)
-    if caller != toBase58String(managementAddress) then {
-        throw("Only for administration")
-    } else {
+    if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
+    else {
         let isReachedSoftCap = wavesBalance(coldVault) >= softCapWaves
         let stoFinished = height >= endHeight
         if (isReachedSoftCap || stoFinished) then {
@@ -64,10 +77,8 @@ func finalize() = {
 
 @Callable(i)
 func setStartTime(newStartTime: Int) = {
-    let caller = toBase58String(i.caller.bytes)
-    if caller != toBase58String(managementAddress) then {
-        throw("Only for administration")
-    } else {
+    if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
+    else {
         if (newStartTime > endHeight) then throw("Start date must be lower than end date")
         # else if (newStartTime <= height) then throw("Cannot set time to past")
         else {
@@ -80,10 +91,8 @@ func setStartTime(newStartTime: Int) = {
 
 @Callable(i)
 func setEndTime(newEndTime: Int) = {
-    let caller = toBase58String(i.caller.bytes)
-    if caller != toBase58String(managementAddress) then {
-        throw("Only for administration")
-    } else {
+    if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
+    else {
         if (newEndTime < startHeight) then throw("End date must be higher than start date")
         else if (newEndTime <= height) then throw("Cannot set time to past")
         else {
@@ -96,10 +105,8 @@ func setEndTime(newEndTime: Int) = {
 
 @Callable(i)
 func setStartAndEndTimes(newStartTime: Int, newEndTime: Int) = {
-    let caller = toBase58String(i.caller.bytes)
-    if caller != toBase58String(managementAddress) then {
-        throw("Only for administration")
-    } else {
+    if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
+    else {
         if (newStartTime > endHeight) then throw("Start date must be lower than end date")
         else if (newEndTime < startHeight) then throw("End date must be higher than start date")
         # else if ((newStartTime <= height) then throw("Cannot set time to past")
@@ -115,10 +122,8 @@ func setStartAndEndTimes(newStartTime: Int, newEndTime: Int) = {
 
 @Callable(i)
 func setMinInvestment(newValue: Int) = {
-    let caller = toBase58String(i.caller.bytes)
-    if caller != toBase58String(managementAddress) then {
-        throw("Only for administration")
-    } else {
+    if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
+    else {
         WriteSet([
             DataEntry("minInvestment", newValue)
         ])
@@ -127,10 +132,8 @@ func setMinInvestment(newValue: Int) = {
 
 @Callable(i)
 func setMaxInvestment(newValue: Int) = {
-    let caller = toBase58String(i.caller.bytes)
-    if caller != toBase58String(managementAddress) then {
-        throw("Only for administration")
-    } else {
+    if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
+    else {
         WriteSet([
             DataEntry("maxInvestment", newValue)
         ])
@@ -139,10 +142,8 @@ func setMaxInvestment(newValue: Int) = {
 
 @Callable(i)
 func setWhitelistAddresses(investors: String) = {
-    let caller = toBase58String(i.caller.bytes)
-    if caller != toBase58String(managementAddress) then {
-        throw("Only for administration")
-    } else {
+    if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
+    else {
         let whitelistDataKey = "whitelistedInvestors"
         let whitelist = split(investors, ",")
         let whitelistSize = size(whitelist)
@@ -158,11 +159,8 @@ func setWhitelistAddresses(investors: String) = {
 
 @Callable(i)
 func addToWhitelist(investor: String) = {
-    let caller = toBase58String(i.caller.bytes)
-    if caller != toBase58String(managementAddress) then {
-        throw("Only for administration")
-    } else {
-
+    if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
+    else {
         let statePrefix = "whitelistedInvestor"
         let stateKey = statePrefix + "-" + investor
         let whitelistDataKey = "whitelistedInvestors"
@@ -191,12 +189,11 @@ func addToWhitelist(investor: String) = {
 }
 
 
+
 @Callable(i)
 func removeFromWhitelist(investor: String) = {
-    let caller = toBase58String(i.caller.bytes)
-    if caller != toBase58String(managementAddress) then {
-        throw("Only for administration")
-    } else {
+    if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
+    else {
         let whitelistDataKey = "whitelistedInvestors"
         let whitelistString = getStringValue(this, whitelistDataKey)
         let whitelistStringSize = size(whitelistString)
