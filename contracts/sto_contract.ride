@@ -12,7 +12,7 @@ let minInvestmentWaves = D_MIN_INVESTMENT
 let maxInvestmentWaves = D_MAX_INVESTMENT
 let startHeight = D_START_DATE
 let endHeight = D_FINISH_DATE
-let whitelist = D_WHITELIST
+let whitelistEnabled = D_WHITELIST
 
 
 func onlyManager(callerBytes: ByteVector) = {
