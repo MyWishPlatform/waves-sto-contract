@@ -23,12 +23,22 @@ func onlyManager(callerBytes: ByteVector) = {
 
 
 func hasStarted() = {
-    if height < startHeight then false else true
+    let dataStartHeight = getInteger(this, "startHeight")
+    if isDefined(getInteger(this, "startHeight")) then
+        let changedStartHeight = extract(dataStartHeight)
+        if height < changedStartHeight then false else true
+    else
+        if height < startHeight then false else true
 }
 
 
 func hasEnded() = {
-    if height < endHeight then false else true
+    let dataEndHeight = getInteger(this, "endHeight")
+    if isDefined(getInteger(this, "endHeight")) then
+        let changedEndHeight = extract(dataEndHeight)
+        if height < changedEndHeight then false else true
+    else
+        if height < endHeight then false else true
 }
 
 
@@ -83,13 +93,26 @@ func finalize() = {
 func setStartTime(newStartTime: Int) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
     else {
-        if (newStartTime > endHeight) then throw("Start date must be lower than end date")
-        # else if (newStartTime <= height) then throw("Cannot set time to past")
-        else {
-            WriteSet([
-                DataEntry("startHeight", newStartTime)
-            ])
-        }
+        let dataEndHeight = getInteger(this, "endHeight")
+        if isDefined(getInteger(this, "endHeight")) then
+            let changedEndHeight = extract(dataEndHeight)
+            if (newStartTime > changedEndHeight) then throw("Start date must be lower than end date")
+            # else if (newStartTime <= height) then throw("Cannot set time to past")
+            else {
+                WriteSet([
+                    DataEntry("startHeight", newStartTime)
+                ])
+            }
+        else
+            if (newStartTime > endHeight) then throw("Start date must be lower than end date")
+            # else if (newStartTime <= height) then throw("Cannot set time to past")
+            else {
+                WriteSet([
+                    DataEntry("startHeight", newStartTime)
+                ])
+            }
+
+
     }
 }
 
@@ -98,13 +121,24 @@ func setStartTime(newStartTime: Int) = {
 func setEndTime(newEndTime: Int) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
     else {
-        if (newEndTime < startHeight) then throw("End date must be higher than start date")
-        else if (newEndTime <= height) then throw("Cannot set time to past")
-        else {
-            WriteSet([
-                DataEntry("endHeight", newEndTime)
-            ])
-        }
+        let dataStartHeight = getInteger(this, "startHeight")
+        if isDefined(getInteger(this, "startHeight")) then
+            let changedStartHeight = extract(dataStartHeight)
+            if (newEndTime < changedStartHeight) then throw("End date must be higher than start date")
+            else if (newEndTime <= height) then throw("Cannot set time to past")
+            else {
+                WriteSet([
+                    DataEntry("endHeight", newEndTime)
+                ])
+            }
+        else
+            if (newEndTime < startHeight) then throw("End date must be higher than start date")
+            else if (newEndTime <= height) then throw("Cannot set time to past")
+            else {
+                WriteSet([
+                    DataEntry("endHeight", newEndTime)
+                ])
+            }
     }
 }
 
@@ -119,8 +153,8 @@ func setStartAndEndTimes(newStartTime: Int, newEndTime: Int) = {
         else if (newEndTime <= height) then throw("Cannot set time to past")
         else {
             WriteSet([
-                DataEntry("startDate", newStartTime),
-                DataEntry("endDate", newEndTime)
+                DataEntry("startHeight", newStartTime),
+                DataEntry("endHeight", newEndTime)
             ])
         }
     }

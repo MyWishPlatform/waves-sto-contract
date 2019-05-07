@@ -1,6 +1,6 @@
 {
     "constants": {
-      "D_MANAGEMENT_ADDR": "3Mvr5fJgHBvEYwNtfrAdhwfzY7PUCtCmRbK",
+      "D_MANAGEMENT_ADDRESS": "3Mvr5fJgHBvEYwNtfrAdhwfzY7PUCtCmRbK",
       "D_COLD_VAULT_ADDR": "3Mq9ufeaJRKgDifAxEmoGYyUm13x9vDd98q",
       "D_ASSET_ID": "ynngf2dfDC5vFv12ereASkqjvrTD1BZoazM1v9gBqrv",
       "D_START_DATE": 550000,
