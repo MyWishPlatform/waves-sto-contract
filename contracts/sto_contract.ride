@@ -8,8 +8,12 @@ let token = base58'D_ASSET_ID'
 let tokenRate = D_RATE
 let softCapWaves = D_SOFT_CAP_WAVES
 let hardCapWaves = D_HARD_CAP_WAVES
+#if defined(D_MIN_INVESTMENT) && D_MIN_INVESTMENT != 0
 let minInvestmentWaves = D_MIN_INVESTMENT
+#endif
+#if defined(D_MAX_INVESTMENT) && D_MAX_INVESTMENT != 0
 let maxInvestmentWaves = D_MAX_INVESTMENT
+#endif
 let startHeight = D_START_DATE
 let endHeight = D_FINISH_DATE
 let whitelistEnabled = D_WHITELIST
@@ -51,8 +55,12 @@ func buyTokens() = {
     else {
         let sendedAmount = extract(i.payment).amount
         if (sendedAmount <= 0) then throw("Cannot accept zero value payments")
+        #if defined(D_MIN_INVESTMENT) && D_MIN_INVESTMENT != 0
         else if (sendedAmount < minInvestmentWaves) then throw("Attached payment is below minimal price")
+        #endif
+        #if defined(D_MAX_INVESTMENT) && D_MAX_INVESTMENT != 0
         else if (sendedAmount > maxInvestmentWaves) then throw("Attached payment is above maximum price")
+        #endif
         else if !hasStarted() then throw("STO is not started yet")
         else if hasEnded() then throw("STO is already finished")
         else {
@@ -160,7 +168,7 @@ func setStartAndEndTimes(newStartTime: Int, newEndTime: Int) = {
     }
 }
 
-
+#if defined(D_MIN_INVESTMENT) && D_MIN_INVESTMENT != 0
 @Callable(i)
 func setMinInvestment(newValue: Int) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
@@ -170,8 +178,9 @@ func setMinInvestment(newValue: Int) = {
         ])
     }
 }
+#endif
 
-
+#if defined(D_MAX_INVESTMENT) && D_MAX_INVESTMENT != 0
 @Callable(i)
 func setMaxInvestment(newValue: Int) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
@@ -181,6 +190,7 @@ func setMaxInvestment(newValue: Int) = {
         ])
     }
 }
+#endif
 
 
 @Callable(i)
