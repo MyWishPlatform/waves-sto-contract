@@ -6,7 +6,9 @@ let managementAddress = base58'D_MANAGEMENT_ADDRESS'
 let coldVault = extract(addressFromString("D_COLD_VAULT_ADDR"))
 let token = base58'D_ASSET_ID'
 let tokenRate = D_RATE
+#if defined(D_SOFT_CAP_WAVES) && D_SOFT_CAP_WAVES != 0
 let softCapWaves = D_SOFT_CAP_WAVES
+#endif
 let hardCapWaves = D_HARD_CAP_WAVES
 #if defined(D_MIN_INVESTMENT) && D_MIN_INVESTMENT != 0
 let minInvestmentWaves = D_MIN_INVESTMENT
@@ -84,9 +86,15 @@ func buyTokens() = {
 func finalize() = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
     else {
+        #if defined(D_SOFT_CAP_WAVES) && D_SOFT_CAP_WAVES != 0
         let isReachedSoftCap = wavesBalance(coldVault) >= softCapWaves
+        #endif 
         let stoFinished = height >= endHeight
+        #if defined(D_SOFT_CAP_WAVES) && D_SOFT_CAP_WAVES != 0
         if (isReachedSoftCap || stoFinished) then {
+        #else
+        if stoFinished then {
+        #endif
             WriteSet([
                 DataEntry("finalized", true)
             ])
