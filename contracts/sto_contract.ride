@@ -30,7 +30,7 @@ func onlyManager(callerBytes: ByteVector) = {
 
 func hasStarted() = {
     let dataStartHeight = getInteger(this, "startHeight")
-    if isDefined(getInteger(this, "startHeight")) then
+    if isDefined(dataStartHeight) then
         let changedStartHeight = extract(dataStartHeight)
         if height < changedStartHeight then false else true
     else
@@ -40,13 +40,20 @@ func hasStarted() = {
 
 func hasEnded() = {
     let dataEndHeight = getInteger(this, "endHeight")
-    if isDefined(getInteger(this, "endHeight")) then
+    if isDefined(dataEndGeight) then
         let changedEndHeight = extract(dataEndHeight)
         if height < changedEndHeight then false else true
     else
         if height < endHeight then false else true
 }
 
+func hasFinished() = {
+    let isFinalized = getString(this, "finalized")
+    if isDefined(isFinalized) then
+        if isFinalized == true then true
+        else false
+    else false
+}
 
 @Callable(i)
 func buyTokens() = {
