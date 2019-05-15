@@ -134,21 +134,22 @@ func finalize() = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
     else {
         if hasFinished() then throw("Already finalized")
-        #if defined(D_SOFT_CAP_WAVES) && D_SOFT_CAP_WAVES != 0
-        let isReachedSoftCap = wavesBalance(coldVault) >= softCapWaves
-        #endif 
-        let stoFinished = height >= endHeight
-        #if defined(D_SOFT_CAP_WAVES) && D_SOFT_CAP_WAVES != 0
-        if (isReachedSoftCap || stoFinished) then {
-        #else
-        if stoFinished then {
-        #endif
-            WriteSet([
-                DataEntry("finalized", true)
-            ])
-        } else {
-            throw("STO not finished yet")
-        }
+        else
+            #if defined(D_SOFT_CAP_WAVES) && D_SOFT_CAP_WAVES != 0
+            let isReachedSoftCap = wavesBalance(coldVault) >= softCapWaves
+            #endif 
+            let stoFinished = height >= endHeight
+            #if defined(D_SOFT_CAP_WAVES) && D_SOFT_CAP_WAVES != 0
+            if (isReachedSoftCap || stoFinished) then {
+            #else
+            if stoFinished then {
+            #endif
+                WriteSet([
+                    DataEntry("finalized", true)
+                ])
+            } else {
+                throw("STO not finished yet")
+            }
     }
 }
 
