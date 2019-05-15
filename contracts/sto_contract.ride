@@ -51,9 +51,9 @@ func hasEnded() = {
 func hasFinished() = {
     let isFinalized = getBoolean(this, "finalized")
     if isDefined(isFinalized) then
-        if isFinalized == true then true
-        else false
-    else false
+        extract(isFinalized)
+    else 
+        false
 }
 
 
@@ -133,6 +133,7 @@ func buyTokens() = {
 func finalize() = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
     else {
+        if hasFinished() then throw("Already finalized")
         #if defined(D_SOFT_CAP_WAVES) && D_SOFT_CAP_WAVES != 0
         let isReachedSoftCap = wavesBalance(coldVault) >= softCapWaves
         #endif 
