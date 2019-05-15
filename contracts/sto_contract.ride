@@ -21,6 +21,7 @@ let endHeight = D_FINISH_DATE
 let whitelistEnabled = D_WHITELIST
 
 
+
 func onlyManager(callerBytes: ByteVector) = {
     let caller = toBase58String(callerBytes)
     let managementAddressString = toBase58String(managementAddress)
@@ -40,7 +41,7 @@ func hasStarted() = {
 
 func hasEnded() = {
     let dataEndHeight = getInteger(this, "endHeight")
-    if isDefined(dataEndGeight) then
+    if isDefined(dataEndHeight) then
         let changedEndHeight = extract(dataEndHeight)
         if height < changedEndHeight then false else true
     else
@@ -48,12 +49,51 @@ func hasEnded() = {
 }
 
 func hasFinished() = {
-    let isFinalized = getString(this, "finalized")
+    let isFinalized = getBoolean(this, "finalized")
     if isDefined(isFinalized) then
         if isFinalized == true then true
         else false
     else false
 }
+
+
+func getStartHeight() = {
+    let dataStartHeight = getInteger(this, "startHeight")
+    if isDefined(dataStartHeight) then 
+        extract(dataStartHeight)
+    else
+        startHeight
+}
+
+
+func getEndHeight() = {
+    let dataEndHeight = getInteger(this, "endHeight")
+    if isDefined(dataEndHeight) then 
+        extract(dataEndHeight)
+    else
+        endHeight
+}
+
+#if defined(D_MIN_INVESTMENT) && D_MIN_INVESTMENT != 0
+func getMinInvestment() = {
+    let dataMinInvestment = getInteger(this, "minInvestment")
+    if isDefined(dataMinInvestment) then
+        extract(dataMinInvestment)
+    else
+        minInvestmentWaves
+}
+#endif
+
+
+#if defined(D_MAX_INVESTMENT) && D_MAX_INVESTMENT != 0
+func getMaxInvestment() = {
+    let dataMaxInvestment = getInteger(this, "maxInvestment")
+    if isDefined(dataMaxInvestment) then
+        extract(dataMaxInvestment)
+    else
+        maxInvestmentWaves
+}
+
 
 @Callable(i)
 func buyTokens() = {
@@ -112,22 +152,6 @@ func finalize() = {
 }
 
 
-func getStartHeight() = {
-    let dataStartHeight = getInteger(this, "startHeight")
-    if isDefined(dataStartHeight) then 
-        extract(dataStartHeight)
-    else
-        startHeight
-
-
-func getEndHeight() = {
-    let dataEndHeight = getInteger(this, "endHeight")
-    if isDefined(dataEndHeight) then 
-        extract(dataEndHeight)
-    else
-        endHeight
-
-
 @Callable(i)
 func setStartTime(newStartTime: Int) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
@@ -162,8 +186,8 @@ func setEndTime(newEndTime: Int) = {
 func setStartAndEndTimes(newStartTime: Int, newEndTime: Int) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
     else {
-        #if (newStartTime > endHeight) then throw("Start date must be lower than end date")
-        #else if (newEndTime < startHeight) then throw("End date must be higher than start date")
+        # if (newStartTime > endHeight) then throw("Start date must be lower than end date")
+        # else if (newEndTime < startHeight) then throw("End date must be higher than start date")
         # else if ((newStartTime <= height) then throw("Cannot set time to past")
         if (newEndTime <= height) then throw("Cannot set time to past")
         else {
@@ -176,15 +200,6 @@ func setStartAndEndTimes(newStartTime: Int, newEndTime: Int) = {
 }
 
 #if defined(D_MIN_INVESTMENT) && D_MIN_INVESTMENT != 0
-func getMinInvestment() = {
-    let dataMinInvestment = getInteger(this, "minInvestment")
-    if isDefined(dataMinInvestment) then
-        extract(dataMinInvestment)
-    else
-        minInvestmentWaves
-}
-
-
 @Callable(i)
 func setMinInvestment(newValue: Int) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
@@ -197,15 +212,6 @@ func setMinInvestment(newValue: Int) = {
 #endif
 
 #if defined(D_MAX_INVESTMENT) && D_MAX_INVESTMENT != 0
-func getMaxInvestment() = {
-    let dataMaxInvestment = getInteger(this, "maxInvestment")
-    if isDefined(dataMaxInvestment) then
-        extract(dataMaxInvestment)
-    else
-        maxInvestmentWaves
-}
-
-
 @Callable(i)
 func setMaxInvestment(newValue: Int) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
@@ -321,4 +327,13 @@ func removeFromWhitelist(investor: String) = {
             }
         }
     }
+}
+
+
+@Verifier(tx)
+func verify() = {
+    #if defined(D_DEBUG) && D_DEBUG == true
+    true
+    #else
+    false
 }
