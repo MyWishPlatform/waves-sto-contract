@@ -162,10 +162,10 @@ func setEndTime(newEndTime: Int) = {
 func setStartAndEndTimes(newStartTime: Int, newEndTime: Int) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
     else {
-        if (newStartTime > endHeight) then throw("Start date must be lower than end date")
-        else if (newEndTime < startHeight) then throw("End date must be higher than start date")
+        #if (newStartTime > endHeight) then throw("Start date must be lower than end date")
+        #else if (newEndTime < startHeight) then throw("End date must be higher than start date")
         # else if ((newStartTime <= height) then throw("Cannot set time to past")
-        else if (newEndTime <= height) then throw("Cannot set time to past")
+        if (newEndTime <= height) then throw("Cannot set time to past")
         else {
             WriteSet([
                 DataEntry("startHeight", newStartTime),
