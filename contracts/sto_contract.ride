@@ -176,6 +176,15 @@ func setStartAndEndTimes(newStartTime: Int, newEndTime: Int) = {
 }
 
 #if defined(D_MIN_INVESTMENT) && D_MIN_INVESTMENT != 0
+func getMinInvestment() = {
+    let dataMinInvestment = getInteger(this, "minInvestment")
+    if isDefined(dataMinInvestment) then
+        extract(dataMinInvestment)
+    else
+        minInvestmentWaves
+}
+
+
 @Callable(i)
 func setMinInvestment(newValue: Int) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
@@ -188,6 +197,15 @@ func setMinInvestment(newValue: Int) = {
 #endif
 
 #if defined(D_MAX_INVESTMENT) && D_MAX_INVESTMENT != 0
+func getMaxInvestment() = {
+    let dataMaxInvestment = getInteger(this, "maxInvestment")
+    if isDefined(dataMaxInvestment) then
+        extract(dataMaxInvestment)
+    else
+        maxInvestmentWaves
+}
+
+
 @Callable(i)
 func setMaxInvestment(newValue: Int) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
