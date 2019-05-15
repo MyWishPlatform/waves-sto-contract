@@ -65,10 +65,10 @@ func buyTokens() = {
         let sendedAmount = extract(i.payment).amount
         if (sendedAmount <= 0) then throw("Cannot accept zero value payments")
         #if defined(D_MIN_INVESTMENT) && D_MIN_INVESTMENT != 0
-        else if (sendedAmount < minInvestmentWaves) then throw("Attached payment is below minimal price")
+        else if (sendedAmount < getMinInvestment()) then throw("Attached payment is below minimal price")
         #endif
         #if defined(D_MAX_INVESTMENT) && D_MAX_INVESTMENT != 0
-        else if (sendedAmount > maxInvestmentWaves) then throw("Attached payment is above maximum price")
+        else if (sendedAmount > getMaxInvestment()) then throw("Attached payment is above maximum price")
         #endif
         else if !hasStarted() then throw("STO is not started yet")
         else if hasEnded() then throw("STO is already finished")
