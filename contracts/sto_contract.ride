@@ -231,14 +231,31 @@ func setWhitelistAddresses(investors: String) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
     else {
         let whitelistDataKey = "whitelistedInvestors"
-        let whitelist = split(investors, ",")
-        let whitelistSize = size(whitelist)
         let totalInvKey = "totalInvestors"
+        let splittedWhitelist = split(investors, ",")
+        let whitelistSize = size(splittedWhitelist)
 
-        WriteSet([
-            DataEntry(whitelistDataKey, investors),
-            DataEntry(totalInvKey, whitelistSize)
-        ])
+        let dataWhitelistString = getString(this, whitelistDataKey)
+        if (isDefined(dataWhitelistString))
+        then {
+            let whitelistString = extract(dataWhitelistString)
+            let previousInvestorsSize = getIntegerValue(this, totalInvKey)
+            let newInvestorsSize = previousInvestorsSize + whitelistSize
+
+            let whitelist = split(whitelistString, ",")
+            let newWhitelistString = whitelistString + "," + investors
+
+            WriteSet([
+                DataEntry(whitelistDataKey, newWhitelistString),
+                DataEntry(totalInvKey, newInvestorsSize)
+            ])
+        }
+        else {
+            WriteSet([
+                DataEntry(whitelistDataKey, investors),
+                DataEntry(totalInvKey, whitelistSize)
+            ])
+        }
     }
 }
 
@@ -338,4 +355,5 @@ func verify() = {
     true
     #else
     false
+    #endif
 }
