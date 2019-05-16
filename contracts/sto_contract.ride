@@ -18,8 +18,6 @@ let maxInvestmentWaves = D_MAX_INVESTMENT
 #endif
 let startHeight = D_START_DATE
 let endHeight = D_FINISH_DATE
-let whitelistEnabled = D_WHITELIST
-
 
 
 func onlyManager(callerBytes: ByteVector) = {
@@ -226,13 +224,17 @@ func setMaxInvestment(newValue: Int) = {
 }
 #endif
 
-
+#if defined(D_WHITELIST) && D_WHITELIST != false
 @Callable(i)
 func setWhitelistAddresses(investors: String) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
     else {
+        # define keys
         let whitelistDataKey = "whitelistedInvestors"
+
         let totalInvKey = "totalInvestors"
+
+        # get size of list
         let splittedWhitelist = split(investors, ",")
         let whitelistSize = size(splittedWhitelist)
 
@@ -259,95 +261,7 @@ func setWhitelistAddresses(investors: String) = {
         }
     }
 }
-
-
-@Callable(i)
-func addToWhitelist(investor: String) = {
-    if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
-    else {
-        let statePrefix = "whitelistedInvestor"
-        let stateKey = statePrefix + "-" + investor
-        let whitelistDataKey = "whitelistedInvestors"
-        let whitelistString = getStringValue(this, whitelistDataKey)
-        let totalInvKey = "totalInvestors"
-
-        if (isDefined(whitelistString))
-        then {
-            let whitelist = split(whitelistString, ",")
-            let newWhitelistString = whitelistString + "," + investor
-
-            WriteSet([
-                DataEntry(stateKey, true),
-                DataEntry(totalInvKey, size(whitelist) + 1),
-                DataEntry(whitelistDataKey, newWhitelistString)
-            ])
-        }
-        else {
-            WriteSet([
-                DataEntry(stateKey, true),
-                DataEntry(totalInvKey, 1),
-                DataEntry(whitelistDataKey, investor)
-            ])
-        }
-    }
-}
-
-
-@Callable(i)
-func removeFromWhitelist(investor: String) = {
-    if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
-    else {
-        let whitelistDataKey = "whitelistedInvestors"
-        let whitelistString = getStringValue(this, whitelistDataKey)
-        let whitelistStringSize = size(whitelistString)
-        if (!isDefined(whitelistString)) then throw("Whitelist is empty")
-        else {
-            let whitelist = split(whitelistString, ",")
-            let investorsCount = size(whitelist)
-
-            let statePrefix = "whitelistedInvestor"
-            let stateKey = statePrefix + "-" + investor
-            let totalInvKey = "totalInvestors"
-
-            let addressSize = size(investor)
-            let addressIndex = extract(indexOf(whitelistString, investor))
-            if (addressIndex == 0) then {
-                let prefixSize = addressSize + 1
-                let newWhitelistString = drop(whitelistString, prefixSize)
-                WriteSet([
-                    DataEntry(stateKey, false),
-                    DataEntry(totalInvKey, investorsCount - 1),
-                    DataEntry(whitelistDataKey, newWhitelistString)
-                ])
-            } else if (addressIndex + addressSize == whitelistStringSize) then {
-                let suffixSize = addressSize + 1
-                let newWhitelistString = dropRight(whitelistString, suffixSize)
-                WriteSet([
-                    DataEntry(stateKey, false),
-                    DataEntry(totalInvKey, investorsCount - 1),
-                    DataEntry(whitelistDataKey, newWhitelistString)
-                ])
-            } else if whitelistStringSize == addressSize then {
-                WriteSet([
-                    DataEntry(stateKey, false),
-                    DataEntry(totalInvKey, 0),
-                    DataEntry(whitelistDataKey, "")
-                ])
-            } else {
-                let prefixSize = addressIndex
-                let newPrefix = take(whitelistString, prefixSize)
-                let suffixSize = whitelistStringSize - (addressIndex + addressSize + 1)
-                let newSuffix = takeRight(whitelistString, suffixSize)
-                let newWhitelistString = newPrefix + newSuffix
-                WriteSet([
-                    DataEntry(stateKey, false),
-                    DataEntry(totalInvKey, investorsCount - 1),
-                    DataEntry(whitelistDataKey, newWhitelistString)
-                ])
-            }
-        }
-    }
-}
+#endif
 
 
 @Verifier(tx)
