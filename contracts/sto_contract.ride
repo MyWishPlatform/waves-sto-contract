@@ -1,0 +1,359 @@
+{-# STDLIB_VERSION 3 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+
+let managementAddress = base58'D_MANAGEMENT_ADDRESS'
+let coldVault = extract(addressFromString("D_COLD_VAULT_ADDR"))
+let token = base58'D_ASSET_ID'
+let tokenRate = D_RATE
+#if defined(D_SOFT_CAP_WAVES) && D_SOFT_CAP_WAVES != 0
+let softCapWaves = D_SOFT_CAP_WAVES
+#endif
+let hardCapWaves = D_HARD_CAP_WAVES
+#if defined(D_MIN_INVESTMENT) && D_MIN_INVESTMENT != 0
+let minInvestmentWaves = D_MIN_INVESTMENT
+#endif
+#if defined(D_MAX_INVESTMENT) && D_MAX_INVESTMENT != 0
+let maxInvestmentWaves = D_MAX_INVESTMENT
+#endif
+let startHeight = D_START_DATE
+let endHeight = D_FINISH_DATE
+let whitelistEnabled = D_WHITELIST
+
+
+
+func onlyManager(callerBytes: ByteVector) = {
+    let caller = toBase58String(callerBytes)
+    let managementAddressString = toBase58String(managementAddress)
+    if caller != managementAddressString then false else true
+}
+
+
+func hasStarted() = {
+    let dataStartHeight = getInteger(this, "startHeight")
+    if isDefined(dataStartHeight) then
+        let changedStartHeight = extract(dataStartHeight)
+        if height < changedStartHeight then false else true
+    else
+        if height < startHeight then false else true
+}
+
+
+func hasEnded() = {
+    let dataEndHeight = getInteger(this, "endHeight")
+    if isDefined(dataEndHeight) then
+        let changedEndHeight = extract(dataEndHeight)
+        if height < changedEndHeight then false else true
+    else
+        if height < endHeight then false else true
+}
+
+func hasFinished() = {
+    let isFinalized = getBoolean(this, "finalized")
+    if isDefined(isFinalized) then
+        extract(isFinalized)
+    else 
+        false
+}
+
+
+func getStartHeight() = {
+    let dataStartHeight = getInteger(this, "startHeight")
+    if isDefined(dataStartHeight) then 
+        extract(dataStartHeight)
+    else
+        startHeight
+}
+
+
+func getEndHeight() = {
+    let dataEndHeight = getInteger(this, "endHeight")
+    if isDefined(dataEndHeight) then 
+        extract(dataEndHeight)
+    else
+        endHeight
+}
+
+#if defined(D_MIN_INVESTMENT) && D_MIN_INVESTMENT != 0
+func getMinInvestment() = {
+    let dataMinInvestment = getInteger(this, "minInvestment")
+    if isDefined(dataMinInvestment) then
+        extract(dataMinInvestment)
+    else
+        minInvestmentWaves
+}
+#endif
+
+
+#if defined(D_MAX_INVESTMENT) && D_MAX_INVESTMENT != 0
+func getMaxInvestment() = {
+    let dataMaxInvestment = getInteger(this, "maxInvestment")
+    if isDefined(dataMaxInvestment) then
+        extract(dataMaxInvestment)
+    else
+        maxInvestmentWaves
+}
+
+
+@Callable(i)
+func buyTokens() = {
+    let investorAddress = toBase58String(i.caller.bytes)
+    let whitelistString = getStringValue(this, "whitelistedInvestors")
+    let listIndex = indexOf(whitelistString, investorAddress)
+    if listIndex == unit then throw("Only for whitelisted")
+    else {
+        let sendedAmount = extract(i.payment).amount
+        if (sendedAmount <= 0) then throw("Cannot accept zero value payments")
+        #if defined(D_MIN_INVESTMENT) && D_MIN_INVESTMENT != 0
+        else if (sendedAmount < getMinInvestment()) then throw("Attached payment is below minimal price")
+        #endif
+        #if defined(D_MAX_INVESTMENT) && D_MAX_INVESTMENT != 0
+        else if (sendedAmount > getMaxInvestment()) then throw("Attached payment is above maximum price")
+        #endif
+        else if !hasStarted() then throw("STO is not started yet")
+        else if hasEnded() then throw("STO is already finished")
+        else {
+            let wavesRaised = wavesBalance(coldVault)
+            if ((wavesRaised + sendedAmount) >= hardCapWaves) then
+                throw("Attached payment overflows hardcap")
+            else {
+                let tokenAmount = (sendedAmount / tokenRate)
+
+                TransferSet([
+                    ScriptTransfer(coldVault, sendedAmount, unit),
+                    ScriptTransfer(i.caller, tokenAmount, token)
+                ])
+            }
+        }
+    }
+}
+
+
+@Callable(i)
+func finalize() = {
+    if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
+    else {
+        if hasFinished() then throw("Already finalized")
+        else
+            #if defined(D_SOFT_CAP_WAVES) && D_SOFT_CAP_WAVES != 0
+            let isReachedSoftCap = wavesBalance(coldVault) >= softCapWaves
+            #endif 
+            let stoFinished = height >= endHeight
+            #if defined(D_SOFT_CAP_WAVES) && D_SOFT_CAP_WAVES != 0
+            if (isReachedSoftCap || stoFinished) then {
+            #else
+            if stoFinished then {
+            #endif
+                WriteSet([
+                    DataEntry("finalized", true)
+                ])
+            } else {
+                throw("STO not finished yet")
+            }
+    }
+}
+
+
+@Callable(i)
+func setStartTime(newStartTime: Int) = {
+    if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
+    else {
+        let currentEndHeight = getEndHeight()
+        if (newStartTime > currentEndHeight) then throw("Start date must be lower than end date")
+        else {
+            WriteSet([
+                DataEntry("startHeight", newStartTime)
+            ])
+        }
+    }
+}
+
+
+@Callable(i)
+func setEndTime(newEndTime: Int) = {
+    if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
+    else {
+        let currentStartHeight = getStartHeight()
+        if (newEndTime > currentStartHeight) then throw("End date must be higher than start date")
+        else {
+            WriteSet([
+                DataEntry("endHeight", newEndTime)
+            ])
+        }
+    }
+}
+
+
+@Callable(i)
+func setStartAndEndTimes(newStartTime: Int, newEndTime: Int) = {
+    if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
+    else {
+        # if (newStartTime > endHeight) then throw("Start date must be lower than end date")
+        # else if (newEndTime < startHeight) then throw("End date must be higher than start date")
+        # else if ((newStartTime <= height) then throw("Cannot set time to past")
+        if (newEndTime <= height) then throw("Cannot set time to past")
+        else {
+            WriteSet([
+                DataEntry("startHeight", newStartTime),
+                DataEntry("endHeight", newEndTime)
+            ])
+        }
+    }
+}
+
+#if defined(D_MIN_INVESTMENT) && D_MIN_INVESTMENT != 0
+@Callable(i)
+func setMinInvestment(newValue: Int) = {
+    if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
+    else {
+        WriteSet([
+            DataEntry("minInvestment", newValue)
+        ])
+    }
+}
+#endif
+
+#if defined(D_MAX_INVESTMENT) && D_MAX_INVESTMENT != 0
+@Callable(i)
+func setMaxInvestment(newValue: Int) = {
+    if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
+    else {
+        WriteSet([
+            DataEntry("maxInvestment", newValue)
+        ])
+    }
+}
+#endif
+
+
+@Callable(i)
+func setWhitelistAddresses(investors: String) = {
+    if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
+    else {
+        let whitelistDataKey = "whitelistedInvestors"
+        let totalInvKey = "totalInvestors"
+        let splittedWhitelist = split(investors, ",")
+        let whitelistSize = size(splittedWhitelist)
+
+        let dataWhitelistString = getString(this, whitelistDataKey)
+        if (isDefined(dataWhitelistString))
+        then {
+            let whitelistString = extract(dataWhitelistString)
+            let previousInvestorsSize = getIntegerValue(this, totalInvKey)
+            let newInvestorsSize = previousInvestorsSize + whitelistSize
+
+            let whitelist = split(whitelistString, ",")
+            let newWhitelistString = whitelistString + "," + investors
+
+            WriteSet([
+                DataEntry(whitelistDataKey, newWhitelistString),
+                DataEntry(totalInvKey, newInvestorsSize)
+            ])
+        }
+        else {
+            WriteSet([
+                DataEntry(whitelistDataKey, investors),
+                DataEntry(totalInvKey, whitelistSize)
+            ])
+        }
+    }
+}
+
+
+@Callable(i)
+func addToWhitelist(investor: String) = {
+    if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
+    else {
+        let statePrefix = "whitelistedInvestor"
+        let stateKey = statePrefix + "-" + investor
+        let whitelistDataKey = "whitelistedInvestors"
+        let whitelistString = getStringValue(this, whitelistDataKey)
+        let totalInvKey = "totalInvestors"
+
+        if (isDefined(whitelistString))
+        then {
+            let whitelist = split(whitelistString, ",")
+            let newWhitelistString = whitelistString + "," + investor
+
+            WriteSet([
+                DataEntry(stateKey, true),
+                DataEntry(totalInvKey, size(whitelist) + 1),
+                DataEntry(whitelistDataKey, newWhitelistString)
+            ])
+        }
+        else {
+            WriteSet([
+                DataEntry(stateKey, true),
+                DataEntry(totalInvKey, 1),
+                DataEntry(whitelistDataKey, investor)
+            ])
+        }
+    }
+}
+
+
+@Callable(i)
+func removeFromWhitelist(investor: String) = {
+    if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
+    else {
+        let whitelistDataKey = "whitelistedInvestors"
+        let whitelistString = getStringValue(this, whitelistDataKey)
+        let whitelistStringSize = size(whitelistString)
+        if (!isDefined(whitelistString)) then throw("Whitelist is empty")
+        else {
+            let whitelist = split(whitelistString, ",")
+            let investorsCount = size(whitelist)
+
+            let statePrefix = "whitelistedInvestor"
+            let stateKey = statePrefix + "-" + investor
+            let totalInvKey = "totalInvestors"
+
+            let addressSize = size(investor)
+            let addressIndex = extract(indexOf(whitelistString, investor))
+            if (addressIndex == 0) then {
+                let prefixSize = addressSize + 1
+                let newWhitelistString = drop(whitelistString, prefixSize)
+                WriteSet([
+                    DataEntry(stateKey, false),
+                    DataEntry(totalInvKey, investorsCount - 1),
+                    DataEntry(whitelistDataKey, newWhitelistString)
+                ])
+            } else if (addressIndex + addressSize == whitelistStringSize) then {
+                let suffixSize = addressSize + 1
+                let newWhitelistString = dropRight(whitelistString, suffixSize)
+                WriteSet([
+                    DataEntry(stateKey, false),
+                    DataEntry(totalInvKey, investorsCount - 1),
+                    DataEntry(whitelistDataKey, newWhitelistString)
+                ])
+            } else if whitelistStringSize == addressSize then {
+                WriteSet([
+                    DataEntry(stateKey, false),
+                    DataEntry(totalInvKey, 0),
+                    DataEntry(whitelistDataKey, "")
+                ])
+            } else {
+                let prefixSize = addressIndex
+                let newPrefix = take(whitelistString, prefixSize)
+                let suffixSize = whitelistStringSize - (addressIndex + addressSize + 1)
+                let newSuffix = takeRight(whitelistString, suffixSize)
+                let newWhitelistString = newPrefix + newSuffix
+                WriteSet([
+                    DataEntry(stateKey, false),
+                    DataEntry(totalInvKey, investorsCount - 1),
+                    DataEntry(whitelistDataKey, newWhitelistString)
+                ])
+            }
+        }
+    }
+}
+
+
+@Verifier(tx)
+func verify() = {
+    #if defined(D_DEBUG) && D_DEBUG == true
+    true
+    #else
+    false
+    #endif
+}
