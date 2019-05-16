@@ -1,6 +1,6 @@
 {
     "constants": {
-      "D_MANAGEMENT_ADDRESS": "3MxuiJsRszpfZBJLHioGA3mhwdvMNtfjyCA",
+      "D_MANAGEMENT_ADDRESS": "3My61WhRb1HXJdhjbwkGx66hQQyQN8XZ31d",
       "D_COLD_VAULT_ADDR": "3MxuiJsRszpfZBJLHioGA3mhwdvMNtfjyCA",
       "D_ASSET_ID": "C1gC6Ngr1yr4FAYBNceBEThrC8o4e2e3PkafTHBbWs7c",
       "D_START_DATE": 550000,
@@ -9,7 +9,8 @@
       "D_WHITELIST": true,
       "D_HARD_CAP_WAVES": "1000000000000",
       "D_MIN_INVESTMENT": "10",
-      "D_MAX_INVESTMENT": "10000000000000000"
+      "D_MAX_INVESTMENT": "10000000000000000",
+      "D_DEBUG": false
     }
 }
 
