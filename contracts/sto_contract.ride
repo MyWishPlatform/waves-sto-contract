@@ -18,8 +18,6 @@ let maxInvestmentWaves = D_MAX_INVESTMENT
 #endif
 let startHeight = D_START_DATE
 let endHeight = D_FINISH_DATE
-let whitelistEnabled = D_WHITELIST
-
 
 
 func onlyManager(callerBytes: ByteVector) = {
@@ -48,18 +46,19 @@ func hasEnded() = {
         if height < endHeight then false else true
 }
 
+
 func hasFinished() = {
     let isFinalized = getBoolean(this, "finalized")
     if isDefined(isFinalized) then
         extract(isFinalized)
-    else 
+    else
         false
 }
 
 
 func getStartHeight() = {
     let dataStartHeight = getInteger(this, "startHeight")
-    if isDefined(dataStartHeight) then 
+    if isDefined(dataStartHeight) then
         extract(dataStartHeight)
     else
         startHeight
@@ -68,11 +67,42 @@ func getStartHeight() = {
 
 func getEndHeight() = {
     let dataEndHeight = getInteger(this, "endHeight")
-    if isDefined(dataEndHeight) then 
+    if isDefined(dataEndHeight) then
         extract(dataEndHeight)
     else
         endHeight
 }
+
+
+func checkInvestorInPage(address: String, page: Int) = {
+    let whitelistPageKey = "whitelistedInvestors-" + toString(page)
+    let whitelistPage = getString(this, whitelistPageKey)
+    if isDefined(whitelistPage)
+    then {
+        let pageString = extract(whitelistPage)
+        let addressPosition = indexOf(pageString, address)
+        if isDefined(addressPosition) then true else false
+    }
+    else
+        false
+}
+
+
+func checkInvestorInAllPages(address: String) = {
+    if      checkInvestorInPage(address, 0) then true
+    else if checkInvestorInPage(address, 1) then true
+    else if checkInvestorInPage(address, 2) then true
+    else if checkInvestorInPage(address, 3) then true
+    else if checkInvestorInPage(address, 4) then true
+    else if checkInvestorInPage(address, 5) then true
+    else if checkInvestorInPage(address, 6) then true
+    else if checkInvestorInPage(address, 7) then true
+    else if checkInvestorInPage(address, 8) then true
+    else if checkInvestorInPage(address, 9) then true
+    else
+        false
+}
+
 
 #if defined(D_MIN_INVESTMENT) && D_MIN_INVESTMENT != 0
 func getMinInvestment() = {
@@ -99,34 +129,36 @@ func getMaxInvestment() = {
 @Callable(i)
 func buyTokens() = {
     let investorAddress = toBase58String(i.caller.bytes)
-    let whitelistString = getStringValue(this, "whitelistedInvestors")
-    let listIndex = indexOf(whitelistString, investorAddress)
-    if listIndex == unit then throw("Only for whitelisted")
+    #if defined(D_WHITELIST) && D_WHITELIST != false
+    if !checkInvestorInAllPages(investorAddress) then throw("Only for whitelisted")
     else {
-        let sendedAmount = extract(i.payment).amount
-        if (sendedAmount <= 0) then throw("Cannot accept zero value payments")
-        #if defined(D_MIN_INVESTMENT) && D_MIN_INVESTMENT != 0
-        else if (sendedAmount < getMinInvestment()) then throw("Attached payment is below minimal price")
-        #endif
-        #if defined(D_MAX_INVESTMENT) && D_MAX_INVESTMENT != 0
-        else if (sendedAmount > getMaxInvestment()) then throw("Attached payment is above maximum price")
-        #endif
-        else if !hasStarted() then throw("STO is not started yet")
-        else if hasEnded() then throw("STO is already finished")
+    #endif
+    let sendedAmount = extract(i.payment).amount
+    if (sendedAmount <= 0) then throw("Cannot accept zero value payments")
+    #if defined(D_MIN_INVESTMENT) && D_MIN_INVESTMENT != 0
+    else if (sendedAmount < getMinInvestment()) then throw("Attached payment is below minimal price")
+    #endif
+    #if defined(D_MAX_INVESTMENT) && D_MAX_INVESTMENT != 0
+    else if (sendedAmount > getMaxInvestment()) then throw("Attached payment is above maximum price")
+    #endif
+    else if !hasStarted() then throw("STO is not started yet")
+    else if hasEnded() then throw("STO is already finished")
+    else {
+        let wavesRaised = wavesBalance(coldVault)
+        if ((wavesRaised + sendedAmount) >= hardCapWaves) then
+            throw("Attached payment overflows hardcap")
         else {
-            let wavesRaised = wavesBalance(coldVault)
-            if ((wavesRaised + sendedAmount) >= hardCapWaves) then
-                throw("Attached payment overflows hardcap")
-            else {
-                let tokenAmount = (sendedAmount / tokenRate)
+            let tokenAmount = (sendedAmount / tokenRate)
 
-                TransferSet([
-                    ScriptTransfer(coldVault, sendedAmount, unit),
-                    ScriptTransfer(i.caller, tokenAmount, token)
-                ])
-            }
+            TransferSet([
+                ScriptTransfer(coldVault, sendedAmount, unit),
+                ScriptTransfer(i.caller, tokenAmount, token)
+            ])
         }
     }
+    #if defined(D_WHITELIST) && D_WHITELIST != false
+    }
+    #endif
 }
 
 
@@ -138,7 +170,7 @@ func finalize() = {
         else
             #if defined(D_SOFT_CAP_WAVES) && D_SOFT_CAP_WAVES != 0
             let isReachedSoftCap = wavesBalance(coldVault) >= softCapWaves
-            #endif 
+            #endif
             let stoFinished = height >= endHeight
             #if defined(D_SOFT_CAP_WAVES) && D_SOFT_CAP_WAVES != 0
             if (isReachedSoftCap || stoFinished) then {
@@ -202,6 +234,7 @@ func setStartAndEndTimes(newStartTime: Int, newEndTime: Int) = {
     }
 }
 
+
 #if defined(D_MIN_INVESTMENT) && D_MIN_INVESTMENT != 0
 @Callable(i)
 func setMinInvestment(newValue: Int) = {
@@ -213,6 +246,7 @@ func setMinInvestment(newValue: Int) = {
     }
 }
 #endif
+
 
 #if defined(D_MAX_INVESTMENT) && D_MAX_INVESTMENT != 0
 @Callable(i)
@@ -227,127 +261,69 @@ func setMaxInvestment(newValue: Int) = {
 #endif
 
 
+#if defined(D_WHITELIST) && D_WHITELIST != false
 @Callable(i)
 func setWhitelistAddresses(investors: String) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
     else {
-        let whitelistDataKey = "whitelistedInvestors"
-        let totalInvKey = "totalInvestors"
         let splittedWhitelist = split(investors, ",")
-        let whitelistSize = size(splittedWhitelist)
+        let newWhitelistSize = size(splittedWhitelist)
 
-        let dataWhitelistString = getString(this, whitelistDataKey)
-        if (isDefined(dataWhitelistString))
+        let whitelistDataPrefix = "whitelistedInvestors"
+        let totalInvestorsKey = "totalInvestors"
+        let currentPageNumKey = "currentWhitelistPage"
+        let currentPageSizeKey = "currentWhitelistPageSize"
+
+        let currentWhitelistSize = getInteger(this, totalInvestorsKey)
+        if (isDefined(currentWhitelistSize))
         then {
-            let whitelistString = extract(dataWhitelistString)
-            let previousInvestorsSize = getIntegerValue(this, totalInvKey)
-            let newInvestorsSize = previousInvestorsSize + whitelistSize
+            let currentInvestorsSize = extract(currentWhitelistSize)
+            let currentPageNum = getIntegerValue(this, currentPageNumKey)
+            let currentPageSize = getIntegerValue(this, currentPageSizeKey)
+            let currentWhitelistKey = whitelistDataPrefix + "-" + toString(currentPageNum)
+            let currentWhitelistData = getStringValue(this, currentWhitelistKey)
 
-            let whitelist = split(whitelistString, ",")
-            let newWhitelistString = whitelistString + "," + investors
+            let remainingPageSize = 100 - currentPageSize
+            if ((newWhitelistSize <= remainingPageSize) && (remainingPageSize > 0))
+            then {
+                let updatedCurrentPageList = currentWhitelistData + "," + investors
+                let updatedPageSize = currentPageSize + newWhitelistSize
+                let newInvestorsSize = currentInvestorsSize + newWhitelistSize
 
-            WriteSet([
-                DataEntry(whitelistDataKey, newWhitelistString),
-                DataEntry(totalInvKey, newInvestorsSize)
-            ])
-        }
-        else {
-            WriteSet([
-                DataEntry(whitelistDataKey, investors),
-                DataEntry(totalInvKey, whitelistSize)
-            ])
-        }
-    }
-}
-
-
-@Callable(i)
-func addToWhitelist(investor: String) = {
-    if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
-    else {
-        let statePrefix = "whitelistedInvestor"
-        let stateKey = statePrefix + "-" + investor
-        let whitelistDataKey = "whitelistedInvestors"
-        let whitelistString = getStringValue(this, whitelistDataKey)
-        let totalInvKey = "totalInvestors"
-
-        if (isDefined(whitelistString))
-        then {
-            let whitelist = split(whitelistString, ",")
-            let newWhitelistString = whitelistString + "," + investor
-
-            WriteSet([
-                DataEntry(stateKey, true),
-                DataEntry(totalInvKey, size(whitelist) + 1),
-                DataEntry(whitelistDataKey, newWhitelistString)
-            ])
-        }
-        else {
-            WriteSet([
-                DataEntry(stateKey, true),
-                DataEntry(totalInvKey, 1),
-                DataEntry(whitelistDataKey, investor)
-            ])
-        }
-    }
-}
-
-
-@Callable(i)
-func removeFromWhitelist(investor: String) = {
-    if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
-    else {
-        let whitelistDataKey = "whitelistedInvestors"
-        let whitelistString = getStringValue(this, whitelistDataKey)
-        let whitelistStringSize = size(whitelistString)
-        if (!isDefined(whitelistString)) then throw("Whitelist is empty")
-        else {
-            let whitelist = split(whitelistString, ",")
-            let investorsCount = size(whitelist)
-
-            let statePrefix = "whitelistedInvestor"
-            let stateKey = statePrefix + "-" + investor
-            let totalInvKey = "totalInvestors"
-
-            let addressSize = size(investor)
-            let addressIndex = extract(indexOf(whitelistString, investor))
-            if (addressIndex == 0) then {
-                let prefixSize = addressSize + 1
-                let newWhitelistString = drop(whitelistString, prefixSize)
                 WriteSet([
-                    DataEntry(stateKey, false),
-                    DataEntry(totalInvKey, investorsCount - 1),
-                    DataEntry(whitelistDataKey, newWhitelistString)
+                    DataEntry(totalInvestorsKey, newInvestorsSize),
+                    DataEntry(currentPageSizeKey, updatedPageSize),
+                    DataEntry(currentWhitelistKey, updatedCurrentPageList)
                 ])
-            } else if (addressIndex + addressSize == whitelistStringSize) then {
-                let suffixSize = addressSize + 1
-                let newWhitelistString = dropRight(whitelistString, suffixSize)
+            }
+            else {
+                let newPageNum = currentPageNum + 1
+                let newInvestorsSize = currentInvestorsSize + newWhitelistSize
+                let newPageSize = newWhitelistSize
+                let newWhitelistKey = whitelistDataPrefix + "-" + toString(newPageNum)
+
                 WriteSet([
-                    DataEntry(stateKey, false),
-                    DataEntry(totalInvKey, investorsCount - 1),
-                    DataEntry(whitelistDataKey, newWhitelistString)
-                ])
-            } else if whitelistStringSize == addressSize then {
-                WriteSet([
-                    DataEntry(stateKey, false),
-                    DataEntry(totalInvKey, 0),
-                    DataEntry(whitelistDataKey, "")
-                ])
-            } else {
-                let prefixSize = addressIndex
-                let newPrefix = take(whitelistString, prefixSize)
-                let suffixSize = whitelistStringSize - (addressIndex + addressSize + 1)
-                let newSuffix = takeRight(whitelistString, suffixSize)
-                let newWhitelistString = newPrefix + newSuffix
-                WriteSet([
-                    DataEntry(stateKey, false),
-                    DataEntry(totalInvKey, investorsCount - 1),
-                    DataEntry(whitelistDataKey, newWhitelistString)
+                    DataEntry(totalInvestorsKey, newInvestorsSize),
+                    DataEntry(currentPageNumKey, newPageNum),
+                    DataEntry(currentPageSizeKey, newPageSize),
+                    DataEntry(newWhitelistKey, investors)
                 ])
             }
         }
+        else {
+            let initPageNum = 0
+            let firstPageKey = whitelistDataPrefix + "-" + toString(initPageNum)
+
+            WriteSet([
+                DataEntry(totalInvestorsKey, newWhitelistSize),
+                DataEntry(currentPageNumKey, initPageNum),
+                DataEntry(currentPageSizeKey, newWhitelistSize),
+                DataEntry(firstPageKey, investors)
+            ])
+        }
     }
 }
+#endif
 
 
 @Verifier(tx)
