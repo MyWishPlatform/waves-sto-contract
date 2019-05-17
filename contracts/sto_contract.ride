@@ -46,18 +46,19 @@ func hasEnded() = {
         if height < endHeight then false else true
 }
 
+
 func hasFinished() = {
     let isFinalized = getBoolean(this, "finalized")
     if isDefined(isFinalized) then
         extract(isFinalized)
-    else 
+    else
         false
 }
 
 
 func getStartHeight() = {
     let dataStartHeight = getInteger(this, "startHeight")
-    if isDefined(dataStartHeight) then 
+    if isDefined(dataStartHeight) then
         extract(dataStartHeight)
     else
         startHeight
@@ -66,7 +67,7 @@ func getStartHeight() = {
 
 func getEndHeight() = {
     let dataEndHeight = getInteger(this, "endHeight")
-    if isDefined(dataEndHeight) then 
+    if isDefined(dataEndHeight) then
         extract(dataEndHeight)
     else
         endHeight
@@ -76,13 +77,13 @@ func getEndHeight() = {
 func checkInvestorInPage(address: String, page: Int) = {
     let whitelistPageKey = "whitelistedInvestors-" + toString(page)
     let whitelistPage = getString(this, whitelistPageKey)
-    if isDefined(whitelistPage) 
+    if isDefined(whitelistPage)
     then {
         let pageString = extract(whitelistPage)
         let addressPosition = indexOf(pageString, address)
         if isDefined(addressPosition) then true else false
     }
-    else 
+    else
         false
 }
 
@@ -98,9 +99,10 @@ func checkInvestorInAllPages(address: String) = {
     else if checkInvestorInPage(address, 7) then true
     else if checkInvestorInPage(address, 8) then true
     else if checkInvestorInPage(address, 9) then true
-    else 
+    else
         false
 }
+
 
 #if defined(D_MIN_INVESTMENT) && D_MIN_INVESTMENT != 0
 func getMinInvestment() = {
@@ -168,7 +170,7 @@ func finalize() = {
         else
             #if defined(D_SOFT_CAP_WAVES) && D_SOFT_CAP_WAVES != 0
             let isReachedSoftCap = wavesBalance(coldVault) >= softCapWaves
-            #endif 
+            #endif
             let stoFinished = height >= endHeight
             #if defined(D_SOFT_CAP_WAVES) && D_SOFT_CAP_WAVES != 0
             if (isReachedSoftCap || stoFinished) then {
@@ -232,6 +234,7 @@ func setStartAndEndTimes(newStartTime: Int, newEndTime: Int) = {
     }
 }
 
+
 #if defined(D_MIN_INVESTMENT) && D_MIN_INVESTMENT != 0
 @Callable(i)
 func setMinInvestment(newValue: Int) = {
@@ -243,6 +246,7 @@ func setMinInvestment(newValue: Int) = {
     }
 }
 #endif
+
 
 #if defined(D_MAX_INVESTMENT) && D_MAX_INVESTMENT != 0
 @Callable(i)
@@ -256,6 +260,7 @@ func setMaxInvestment(newValue: Int) = {
 }
 #endif
 
+
 #if defined(D_WHITELIST) && D_WHITELIST != false
 @Callable(i)
 func setWhitelistAddresses(investors: String) = {
@@ -263,7 +268,7 @@ func setWhitelistAddresses(investors: String) = {
     else {
         let splittedWhitelist = split(investors, ",")
         let newWhitelistSize = size(splittedWhitelist)
-        
+
         let whitelistDataPrefix = "whitelistedInvestors"
         let totalInvestorsKey = "totalInvestors"
         let currentPageNumKey = "currentWhitelistPage"
@@ -290,7 +295,7 @@ func setWhitelistAddresses(investors: String) = {
                     DataEntry(currentPageSizeKey, updatedPageSize),
                     DataEntry(currentWhitelistKey, updatedCurrentPageList)
                 ])
-            } 
+            }
             else {
                 let newPageNum = currentPageNum + 1
                 let newInvestorsSize = currentInvestorsSize + newWhitelistSize
