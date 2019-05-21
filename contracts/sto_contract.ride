@@ -9,7 +9,7 @@ let tokenRate = D_RATE
 #if defined(D_SOFT_CAP_WAVES) && D_SOFT_CAP_WAVES != 0
 let softCapWaves = D_SOFT_CAP_WAVES
 #endif
-let hardCapWaves = D_HARD_CAP_WAVES
+let hardCapTokens = D_HARD_CAP_WAVES
 #if defined(D_MIN_INVESTMENT) && D_MIN_INVESTMENT != 0
 let minInvestmentWaves = D_MIN_INVESTMENT
 #endif
@@ -71,6 +71,14 @@ func getEndHeight() = {
         extract(dataEndHeight)
     else
         endHeight
+}
+
+func getWavesRaised() = {
+    let wavesRaised = getInteger(this, "wavesRaised")
+    if isDefined(wavesRaised) then
+        extract(wavesRaised)
+    else
+        0
 }
 
 
@@ -144,16 +152,23 @@ func buyTokens() = {
     else if !hasStarted() then throw("STO is not started yet")
     else if hasEnded() then throw("STO is already finished")
     else {
-        let wavesRaised = wavesBalance(coldVault)
-        if ((wavesRaised + sendedAmount) >= hardCapWaves) then
+        #let wavesRaised = wavesBalance(coldVault)
+        let wavesRaised = getWavesRaised()
+        let hardCapWaves = hardCapTokens / tokenRate
+        if (wavesRaised + sendedAmount) > hardCapWaves then
             throw("Attached payment overflows hardcap")
         else {
-            let tokenAmount = (sendedAmount / tokenRate)
+            let tokenAmount = (sendedAmount * tokenRate)
 
-            TransferSet([
-                ScriptTransfer(coldVault, sendedAmount, unit),
-                ScriptTransfer(i.caller, tokenAmount, token)
-            ])
+            ScriptResult(
+                WriteSet([
+                    DataEntry("wavesRaised", wavesRaised + sendedAmount)
+                ]),
+                TransferSet([
+                    ScriptTransfer(coldVault, sendedAmount, unit),
+                    ScriptTransfer(i.caller, tokenAmount, token)
+                ])
+            )
         }
     }
     #if defined(D_WHITELIST) && D_WHITELIST != false
