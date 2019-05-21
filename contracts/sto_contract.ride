@@ -154,7 +154,8 @@ func buyTokens() = {
     else {
         #let wavesRaised = wavesBalance(coldVault)
         let wavesRaised = getWavesRaised()
-        if ((wavesRaised + sendedAmount) >= (hardCapTokens / tokenRate) then
+        let hardCapWaves = hardCapTokens / tokenRate
+        if (wavesRaised + sendedAmount) >= hardCapWaves then
             throw("Attached payment overflows hardcap")
         else {
             let tokenAmount = (sendedAmount * tokenRate)
