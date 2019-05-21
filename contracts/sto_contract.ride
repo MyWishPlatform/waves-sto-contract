@@ -73,6 +73,14 @@ func getEndHeight() = {
         endHeight
 }
 
+func getWavesRaised() = {
+    let wavesRaised = getInteger(this, "wavesRaised")
+    if isDefined(wavesRaised) then
+        extract(wavesRaised)
+    else
+        0
+}
+
 
 func checkInvestorInPage(address: String, page: Int) = {
     let whitelistPageKey = "whitelistedInvestors-" + toString(page)
@@ -144,16 +152,22 @@ func buyTokens() = {
     else if !hasStarted() then throw("STO is not started yet")
     else if hasEnded() then throw("STO is already finished")
     else {
-        let wavesRaised = wavesBalance(coldVault)
+        #let wavesRaised = wavesBalance(coldVault)
+        let wavesRaised = getWavesRaised()
         if ((wavesRaised + sendedAmount) >= hardCapWaves) then
             throw("Attached payment overflows hardcap")
         else {
             let tokenAmount = (sendedAmount / tokenRate)
 
-            TransferSet([
-                ScriptTransfer(coldVault, sendedAmount, unit),
-                ScriptTransfer(i.caller, tokenAmount, token)
-            ])
+            ScriptResult(
+                WriteSet([
+                    DataEntry("wavesRaised", wavesRaised + sendedAmount)
+                ]),
+                TransferSet([
+                    ScriptTransfer(coldVault, sendedAmount, unit),
+                    ScriptTransfer(i.caller, tokenAmount, token)
+                ])
+            )
         }
     }
     #if defined(D_WHITELIST) && D_WHITELIST != false
