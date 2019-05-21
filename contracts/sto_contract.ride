@@ -9,7 +9,7 @@ let tokenRate = D_RATE
 #if defined(D_SOFT_CAP_WAVES) && D_SOFT_CAP_WAVES != 0
 let softCapWaves = D_SOFT_CAP_WAVES
 #endif
-let hardCapWaves = D_HARD_CAP_WAVES
+let hardCapTokens = D_HARD_CAP_WAVES
 #if defined(D_MIN_INVESTMENT) && D_MIN_INVESTMENT != 0
 let minInvestmentWaves = D_MIN_INVESTMENT
 #endif
@@ -154,10 +154,10 @@ func buyTokens() = {
     else {
         #let wavesRaised = wavesBalance(coldVault)
         let wavesRaised = getWavesRaised()
-        if ((wavesRaised + sendedAmount) >= hardCapWaves) then
+        if ((wavesRaised + sendedAmount) >= (hardCapTokens / tokenRate) then
             throw("Attached payment overflows hardcap")
         else {
-            let tokenAmount = (sendedAmount / tokenRate)
+            let tokenAmount = (sendedAmount * tokenRate)
 
             ScriptResult(
                 WriteSet([
