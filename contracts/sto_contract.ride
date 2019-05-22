@@ -160,16 +160,20 @@ func buyTokens() = {
         if (wavesRaised + sendedAmount) > hardCapWaves then
             throw("Attached payment overflows hardcap")
         else {
-            let tokenAmount = (sendedAmount * tokenRate) / (wave / tokenDecimalsOffset)
-            ScriptResult(
-                WriteSet([
-                    DataEntry("wavesRaised", toString(wavesRaised + sendedAmount))
-                ]),
-                TransferSet([
-                    ScriptTransfer(coldVault, sendedAmount, unit),
-                    ScriptTransfer(i.caller, tokenAmount, token)
-                ])
-            )
+            let waveOffset = wave / tokenDecimalsOffset
+            let tokenAmount = (sendedAmount * tokenRate) / waveOffset
+            if sendedAmount < waveOffset then throw("Attached payment is too low to buy unit of token")
+            else {
+                ScriptResult(
+                    WriteSet([
+                        DataEntry("wavesRaised", toString(wavesRaised + sendedAmount))
+                    ]),
+                    TransferSet([
+                        ScriptTransfer(coldVault, sendedAmount, unit),
+                        ScriptTransfer(i.caller, tokenAmount, token)
+                    ])
+                )
+            }
         }
     }
     #if defined(D_WHITELIST) && D_WHITELIST != false
