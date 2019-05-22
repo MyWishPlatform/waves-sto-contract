@@ -166,7 +166,7 @@ func buyTokens() = {
             else {
                 ScriptResult(
                     WriteSet([
-                        DataEntry("wavesRaised", toString(wavesRaised + sendedAmount))
+                        DataEntry("wavesRaised", wavesRaised + sendedAmount)
                     ]),
                     TransferSet([
                         ScriptTransfer(coldVault, sendedAmount, unit),
