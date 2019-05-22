@@ -6,6 +6,7 @@
       "D_START_DATE": 550000,
       "D_FINISH_DATE": 600000,
       "D_RATE": "1000",
+      "D_DECIMALS_MULTIPLIER": 100,
       "D_WHITELIST": true,
       "D_HARD_CAP_WAVES": "1000000000000",
       "D_MIN_INVESTMENT": "10",
