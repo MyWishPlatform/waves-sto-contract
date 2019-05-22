@@ -19,7 +19,7 @@ let maxInvestmentWaves = D_MAX_INVESTMENT
 #endif
 let startHeight = D_START_DATE
 let endHeight = D_FINISH_DATE
-let wave = 100000000
+let oneWaves = 100000000
 
 
 func onlyManager(callerBytes: ByteVector) = {
@@ -151,22 +151,24 @@ func buyTokens() = {
     #if defined(D_MAX_INVESTMENT) && D_MAX_INVESTMENT != 0
     else if (sendedAmount > getMaxInvestment()) then throw("Attached payment is above maximum price")
     #endif
-    else if !hasStarted() then throw("STO is not started yet")
-    else if hasEnded() then throw("STO is already ended")
+    else if !hasStarted() then throw("STO time is not started yet")
+    else if hasEnded() then throw("STO time is already ended")
+    else if hasFinished() then throw("STO is finalized")
     else {
         #let wavesRaised = wavesBalance(coldVault)
         let wavesRaised = getWavesRaised()
-        let waveOffset = wave / tokenDecimalsOffset
-        let hardCapWaves = hardCapTokens / tokenRate * waveOffset
-        if (wavesRaised + sendedAmount) > hardCapWaves then
+        let wavesOffset = oneWaves / tokenDecimalsOffset
+        let hardCapWaves = hardCapTokens / tokenRate * wavesOffset
+        let updatedWavesRaised = wavesRaised + sendedAmount
+        if (updatedWavesRaised) > hardCapWaves then
             throw("Attached payment overflows hardcap")
         else {
-            let tokenAmount = (sendedAmount * tokenRate) / waveOffset
-            if sendedAmount < waveOffset then throw("Attached payment is too low to buy unit of token")
+            let tokenAmount = (sendedAmount * tokenRate) / wavesOffset
+            if sendedAmount < wavesOffset then throw("Attached payment is too low to buy unit of token")
             else {
                 ScriptResult(
                     WriteSet([
-                        DataEntry("wavesRaised", wavesRaised + sendedAmount)
+                        DataEntry("wavesRaised", updatedWavesRaised)
                     ]),
                     TransferSet([
                         ScriptTransfer(coldVault, sendedAmount, unit),
@@ -191,11 +193,10 @@ func finalize() = {
             #if defined(D_SOFT_CAP_WAVES) && D_SOFT_CAP_WAVES != 0
             let isReachedSoftCap = wavesBalance(coldVault) >= softCapWaves
             #endif
-            let stoFinished = height >= endHeight
             #if defined(D_SOFT_CAP_WAVES) && D_SOFT_CAP_WAVES != 0
-            if (isReachedSoftCap || stoFinished) then {
+            if (isReachedSoftCap || hasEnded()) then {
             #else
-            if stoFinished then {
+            if hasEnded() then {
             #endif
                 WriteSet([
                     DataEntry("finalized", true)
