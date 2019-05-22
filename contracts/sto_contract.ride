@@ -6,6 +6,7 @@ let managementAddress = base58'D_MANAGEMENT_ADDRESS'
 let coldVault = extract(addressFromString("D_COLD_VAULT_ADDR"))
 let token = base58'D_ASSET_ID'
 let tokenRate = D_RATE
+let tokenDecimalsOffset = D_DECIMALS_MULTIPLIER
 #if defined(D_SOFT_CAP_WAVES) && D_SOFT_CAP_WAVES != 0
 let softCapWaves = D_SOFT_CAP_WAVES
 #endif
@@ -18,6 +19,7 @@ let maxInvestmentWaves = D_MAX_INVESTMENT
 #endif
 let startHeight = D_START_DATE
 let endHeight = D_FINISH_DATE
+let wave = 100000000
 
 
 func onlyManager(callerBytes: ByteVector) = {
@@ -150,7 +152,7 @@ func buyTokens() = {
     else if (sendedAmount > getMaxInvestment()) then throw("Attached payment is above maximum price")
     #endif
     else if !hasStarted() then throw("STO is not started yet")
-    else if hasEnded() then throw("STO is already finished")
+    else if hasEnded() then throw("STO is already ended")
     else {
         #let wavesRaised = wavesBalance(coldVault)
         let wavesRaised = getWavesRaised()
@@ -158,11 +160,10 @@ func buyTokens() = {
         if (wavesRaised + sendedAmount) > hardCapWaves then
             throw("Attached payment overflows hardcap")
         else {
-            let tokenAmount = (sendedAmount * tokenRate)
-
+            let tokenAmount = (sendedAmount * tokenRate) / (wave / tokenDecimalsOffset)
             ScriptResult(
                 WriteSet([
-                    DataEntry("wavesRaised", wavesRaised + sendedAmount)
+                    DataEntry("wavesRaised", toString(wavesRaised + sendedAmount))
                 ]),
                 TransferSet([
                     ScriptTransfer(coldVault, sendedAmount, unit),
