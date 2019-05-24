@@ -10,8 +10,7 @@
       "D_WHITELIST": true,
       "D_HARD_CAP_WAVES": "1000000000000",
       "D_MIN_INVESTMENT": "10",
-      "D_MAX_INVESTMENT": "10000000000000000",
-      "D_DEBUG": false
+      "D_MAX_INVESTMENT": "10000000000000000"
     }
 }
 

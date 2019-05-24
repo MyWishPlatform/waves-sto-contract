@@ -19,82 +19,88 @@ let maxInvestmentWaves = D_MAX_INVESTMENT
 #endif
 let startHeight = D_START_DATE
 let endHeight = D_FINISH_DATE
-let oneWaves = 100000000
+let wavesDecimals = 100000000
 
 
 func onlyManager(callerBytes: ByteVector) = {
     let caller = toBase58String(callerBytes)
     let managementAddressString = toBase58String(managementAddress)
-    if caller != managementAddressString then false else true
-}
-
-
-func hasStarted() = {
-    let dataStartHeight = getInteger(this, "startHeight")
-    if isDefined(dataStartHeight) then
-        let changedStartHeight = extract(dataStartHeight)
-        if height < changedStartHeight then false else true
-    else
-        if height < startHeight then false else true
-}
-
-
-func hasEnded() = {
-    let dataEndHeight = getInteger(this, "endHeight")
-    if isDefined(dataEndHeight) then
-        let changedEndHeight = extract(dataEndHeight)
-        if height < changedEndHeight then false else true
-    else
-        if height < endHeight then false else true
-}
-
-
-func hasFinished() = {
-    let isFinalized = getBoolean(this, "finalized")
-    if isDefined(isFinalized) then
-        extract(isFinalized)
-    else
-        false
+    if caller != managementAddressString then 
+        false 
+    else 
+        true
 }
 
 
 func getStartHeight() = {
     let dataStartHeight = getInteger(this, "startHeight")
-    if isDefined(dataStartHeight) then
-        extract(dataStartHeight)
-    else
-        startHeight
+    match dataStartHeight {
+        case changedStartHeight:Int => changedStartHeight
+        case notChanged:Unit => startHeight
+    }
 }
 
 
 func getEndHeight() = {
     let dataEndHeight = getInteger(this, "endHeight")
-    if isDefined(dataEndHeight) then
-        extract(dataEndHeight)
-    else
-        endHeight
+    match dataEndHeight {
+        case changedEndHeight:Int => changedEndHeight
+        case notChanged:Unit => endHeight
+    }
 }
+
+
+func hasStarted() = {
+    let dataStartHeight = getInteger(this, "startHeight")
+    let stoStartHeight = getStartHeight()
+    if height > stoStartHeight then
+        true
+    else
+        false
+}
+
+
+func hasEnded() = {
+    let dataEndHeight = getInteger(this, "endHeight")
+    let stoEndHeight = getEndHeight()
+    if height > stoEndHeight then
+        true
+    else
+        false
+}
+
+
+func hasFinished() = {
+    let isFinalized = getBoolean(this, "finalized")
+    match isFinalized {
+        case dataFinalized:Boolean => dataFinalized
+        case notFinalized:Unit => false
+    }
+}
+
 
 func getWavesRaised() = {
     let wavesRaised = getInteger(this, "wavesRaised")
-    if isDefined(wavesRaised) then
-        extract(wavesRaised)
-    else
-        0
+    match wavesRaised {
+        case waves:Int => waves
+        case emptyState:Unit => 0
+    }
 }
 
 
 func checkInvestorInPage(address: String, page: Int) = {
     let whitelistPageKey = "whitelistedInvestors-" + toString(page)
     let whitelistPage = getString(this, whitelistPageKey)
-    if isDefined(whitelistPage)
-    then {
-        let pageString = extract(whitelistPage)
-        let addressPosition = indexOf(pageString, address)
-        if isDefined(addressPosition) then true else false
+    match whitelistPage {
+        case pageString:String => {
+            let addressPosition = indexOf(pageString, address)
+            match addressPosition {
+                case pos:Int => true
+                case empty:Unit => false
+            }
+        }
+        case emptyPage:Unit => false
     }
-    else
-        false
 }
 
 
@@ -117,10 +123,10 @@ func checkInvestorInAllPages(address: String) = {
 #if defined(D_MIN_INVESTMENT) && D_MIN_INVESTMENT != 0
 func getMinInvestment() = {
     let dataMinInvestment = getInteger(this, "minInvestment")
-    if isDefined(dataMinInvestment) then
-        extract(dataMinInvestment)
-    else
-        minInvestmentWaves
+    match dataMinInvestment {
+        case changedMinInvestment:Int => changedMinInvestment
+        case notChanged:Unit => minInvestmentWaves
+    }
 }
 #endif
 
@@ -128,10 +134,10 @@ func getMinInvestment() = {
 #if defined(D_MAX_INVESTMENT) && D_MAX_INVESTMENT != 0
 func getMaxInvestment() = {
     let dataMaxInvestment = getInteger(this, "maxInvestment")
-    if isDefined(dataMaxInvestment) then
-        extract(dataMaxInvestment)
-    else
-        maxInvestmentWaves
+    match dataMaxInvestment {
+        case changedMaxInvestment:Int => changedMaxInvestment
+        case notChanged:Unit => maxInvestmentWaves
+    }
 }
 #endif
 
@@ -157,7 +163,7 @@ func buyTokens() = {
     else {
         #let wavesRaised = wavesBalance(coldVault)
         let wavesRaised = getWavesRaised()
-        let wavesOffset = oneWaves / tokenDecimalsOffset
+        let wavesOffset = wavesDecimals / tokenDecimalsOffset
         let hardCapWaves = hardCapTokens / tokenRate * wavesOffset
         let updatedWavesRaised = wavesRaised + sendedAmount
         if (updatedWavesRaised) > hardCapWaves then
@@ -297,51 +303,51 @@ func setWhitelistAddresses(investors: String) = {
         let currentPageSizeKey = "currentWhitelistPageSize"
 
         let currentWhitelistSize = getInteger(this, totalInvestorsKey)
-        if (isDefined(currentWhitelistSize))
-        then {
-            let currentInvestorsSize = extract(currentWhitelistSize)
-            let currentPageNum = getIntegerValue(this, currentPageNumKey)
-            let currentPageSize = getIntegerValue(this, currentPageSizeKey)
-            let currentWhitelistKey = whitelistDataPrefix + "-" + toString(currentPageNum)
-            let currentWhitelistData = getStringValue(this, currentWhitelistKey)
+        match currentWhitelistSize {
+            case currentInvestorsSize:Int => {
+                let currentPageNum = getIntegerValue(this, currentPageNumKey)
+                let currentPageSize = getIntegerValue(this, currentPageSizeKey)
+                let currentWhitelistKey = whitelistDataPrefix + "-" + toString(currentPageNum)
+                let currentWhitelistData = getStringValue(this, currentWhitelistKey)
 
-            let remainingPageSize = 100 - currentPageSize
-            if ((newWhitelistSize <= remainingPageSize) && (remainingPageSize > 0))
-            then {
-                let updatedCurrentPageList = currentWhitelistData + "," + investors
-                let updatedPageSize = currentPageSize + newWhitelistSize
-                let newInvestorsSize = currentInvestorsSize + newWhitelistSize
+                let remainingPageSize = 100 - currentPageSize
+                if ((newWhitelistSize <= remainingPageSize) && (remainingPageSize > 0))
+                then {
+                    let updatedCurrentPageList = currentWhitelistData + "," + investors
+                    let updatedPageSize = currentPageSize + newWhitelistSize
+                    let newInvestorsSize = currentInvestorsSize + newWhitelistSize
+
+                    WriteSet([
+                        DataEntry(totalInvestorsKey, newInvestorsSize),
+                        DataEntry(currentPageSizeKey, updatedPageSize),
+                        DataEntry(currentWhitelistKey, updatedCurrentPageList)
+                    ])
+                }
+                else {
+                    let newPageNum = currentPageNum + 1
+                    let newInvestorsSize = currentInvestorsSize + newWhitelistSize
+                    let newPageSize = newWhitelistSize
+                    let newWhitelistKey = whitelistDataPrefix + "-" + toString(newPageNum)
+
+                    WriteSet([
+                        DataEntry(totalInvestorsKey, newInvestorsSize),
+                        DataEntry(currentPageNumKey, newPageNum),
+                        DataEntry(currentPageSizeKey, newPageSize),
+                        DataEntry(newWhitelistKey, investors)
+                    ])
+                }
+            }
+            case emptyWhitelist:Unit => {
+                let initPageNum = 0
+                let firstPageKey = whitelistDataPrefix + "-" + toString(initPageNum)
 
                 WriteSet([
-                    DataEntry(totalInvestorsKey, newInvestorsSize),
-                    DataEntry(currentPageSizeKey, updatedPageSize),
-                    DataEntry(currentWhitelistKey, updatedCurrentPageList)
+                    DataEntry(totalInvestorsKey, newWhitelistSize),
+                    DataEntry(currentPageNumKey, initPageNum),
+                    DataEntry(currentPageSizeKey, newWhitelistSize),
+                    DataEntry(firstPageKey, investors)
                 ])
             }
-            else {
-                let newPageNum = currentPageNum + 1
-                let newInvestorsSize = currentInvestorsSize + newWhitelistSize
-                let newPageSize = newWhitelistSize
-                let newWhitelistKey = whitelistDataPrefix + "-" + toString(newPageNum)
-
-                WriteSet([
-                    DataEntry(totalInvestorsKey, newInvestorsSize),
-                    DataEntry(currentPageNumKey, newPageNum),
-                    DataEntry(currentPageSizeKey, newPageSize),
-                    DataEntry(newWhitelistKey, investors)
-                ])
-            }
-        }
-        else {
-            let initPageNum = 0
-            let firstPageKey = whitelistDataPrefix + "-" + toString(initPageNum)
-
-            WriteSet([
-                DataEntry(totalInvestorsKey, newWhitelistSize),
-                DataEntry(currentPageNumKey, initPageNum),
-                DataEntry(currentPageSizeKey, newWhitelistSize),
-                DataEntry(firstPageKey, investors)
-            ])
         }
     }
 }
@@ -350,9 +356,5 @@ func setWhitelistAddresses(investors: String) = {
 
 @Verifier(tx)
 func verify() = {
-    #if defined(D_DEBUG) && D_DEBUG == true
-    true
-    #else
     false
-    #endif
 }
