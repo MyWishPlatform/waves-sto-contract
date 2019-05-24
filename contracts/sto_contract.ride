@@ -35,7 +35,7 @@ func onlyManager(callerBytes: ByteVector) = {
 func hasStarted() = {
     let dataStartHeight = getInteger(this, "startHeight")
     if isDefined(dataStartHeight) then
-        let changedStartHeight = extract(dataStartHeight)
+        let changpppnedStartHeight = extract(dataStartHeight)
         if height < changedStartHeight then 
             false 
         else
@@ -66,36 +66,37 @@ func hasEnded() = {
 
 func hasFinished() = {
     let isFinalized = getBoolean(this, "finalized")
-    if isDefined(isFinalized) then
-        extract(isFinalized)
-    else
-        false
+    match isFinalized {
+        case dataFinalized:Boolean => dataFinalized
+        case noData:Unit => false
+    }
 }
+
 
 
 func getStartHeight() = {
     let dataStartHeight = getInteger(this, "startHeight")
-    if isDefined(dataStartHeight) then
-        extract(dataStartHeight)
-    else
-        startHeight
+    match dataStartHeight {
+        case stateStartHeight:Int => stateStartHeight
+        case noData:Unit => startHeight
+    }
 }
 
 
 func getEndHeight() = {
     let dataEndHeight = getInteger(this, "endHeight")
-    if isDefined(dataEndHeight) then
-        extract(dataEndHeight)
-    else
-        endHeight
+    match dataEndHeight {
+        case stateEndHeight:Int => stateEndHeight
+        case noData:Unit => endHeight
+    }
 }
 
 func getWavesRaised() = {
     let wavesRaised = getInteger(this, "wavesRaised")
-    if isDefined(wavesRaised) then
-        extract(wavesRaised)
-    else
-        0
+    match wavesRaised {
+        case waves:Int => waves
+        case noData:Unit => 0
+    }
 }
 
 
