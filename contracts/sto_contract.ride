@@ -25,7 +25,10 @@ let oneWaves = 100000000
 func onlyManager(callerBytes: ByteVector) = {
     let caller = toBase58String(callerBytes)
     let managementAddressString = toBase58String(managementAddress)
-    if caller != managementAddressString then false else true
+    if caller != managementAddressString then 
+        false 
+    else 
+        true
 }
 
 
@@ -33,9 +36,15 @@ func hasStarted() = {
     let dataStartHeight = getInteger(this, "startHeight")
     if isDefined(dataStartHeight) then
         let changedStartHeight = extract(dataStartHeight)
-        if height < changedStartHeight then false else true
+        if height < changedStartHeight then 
+            false 
+        else
+            true
     else
-        if height < startHeight then false else true
+        if height < startHeight then
+            false
+        else
+            true
 }
 
 
@@ -43,9 +52,15 @@ func hasEnded() = {
     let dataEndHeight = getInteger(this, "endHeight")
     if isDefined(dataEndHeight) then
         let changedEndHeight = extract(dataEndHeight)
-        if height < changedEndHeight then false else true
+        if height < changedEndHeight then
+            false
+         else
+            true
     else
-        if height < endHeight then false else true
+        if height < endHeight then
+            false
+        else
+            true
 }
 
 
@@ -91,7 +106,10 @@ func checkInvestorInPage(address: String, page: Int) = {
     then {
         let pageString = extract(whitelistPage)
         let addressPosition = indexOf(pageString, address)
-        if isDefined(addressPosition) then true else false
+        if isDefined(addressPosition) then 
+            true 
+        else
+            false
     }
     else
         false
