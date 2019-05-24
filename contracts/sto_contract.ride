@@ -368,9 +368,5 @@ func setWhitelistAddresses(investors: String) = {
 
 @Verifier(tx)
 func verify() = {
-    #if defined(D_DEBUG) && D_DEBUG == true
-    true
-    #else
     false
-    #endif
 }
