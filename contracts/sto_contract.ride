@@ -38,7 +38,7 @@ func getStartTime() = {
     let dataStartTime = getInteger(this, "startTime")
     match dataStartTime {
         case changedStartTime:Int => changedStartTime
-        case notChanged:Unit => starTime
+        case notChanged:Unit => startTime
     }
 }
 
@@ -55,7 +55,7 @@ func getEndTime() = {
 func hasStarted() = {
     let dataStartTime = getInteger(this, "startTime")
     let stoStartTime = getStartTime()
-    let blockInfo = BlockInfoByHeight(height).value()
+    let blockInfo = blockInfoByHeight(height).value()
     let timeNow = blockInfo.timestamp
     if timeNow > stoStartTime then
         true
@@ -67,7 +67,7 @@ func hasStarted() = {
 func hasEnded() = {
     let dataEndTime = getInteger(this, "endTime")
     let stoEndTime = getEndTime()
-    let blockInfo = BlockInfoByHeight(height).value()
+    let blockInfo = blockInfoByHeight(height).value()
     let timeNow = blockInfo.timestamp
     if timeNow > stoEndTime then
         true
@@ -258,7 +258,7 @@ func setStartAndEndTimes(newStartTime: Int, newEndTime: Int) = {
         # if (newStartTime > endHeight) then throw("Start date must be lower than end date")
         # else if (newEndTime < startHeight) then throw("End date must be higher than start date")
         # else if ((newStartTime <= height) then throw("Cannot set time to past")
-        let blockInfo = BlockInfoByHeight(height).value()
+        let blockInfo = blockInfoByHeight(height).value()
         let timeNow = blockInfo.timestamp
         if (newEndTime <= timeNow) then throw("Cannot set time to past")
         else {
