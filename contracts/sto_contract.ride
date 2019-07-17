@@ -6,8 +6,8 @@ let managementAddress = base58'D_MANAGEMENT_ADDRESS'
 let coldVault = extract(addressFromString("D_COLD_VAULT_ADDR"))
 let token = base58'D_ASSET_ID'
 let tokenRate = D_RATE
-//let tokenDecimalsOffset = D_DECIMALS_MULTIPLIER
-let tokenDecimalsOffset = pow(10,0,D_DECIMALS_MULTIPLIER,0,0, Up())
+#let tokenDecimalsOffset = D_DECIMALS
+let tokenDecimalsOffset = pow(10,0,D_DECIMALS,0,0, Up())
 #if defined(D_SOFT_CAP_WAVES) && D_SOFT_CAP_WAVES != 0
 let softCapWaves = D_SOFT_CAP_WAVES
 #endif
@@ -20,8 +20,8 @@ let maxInvestmentWaves = D_MAX_INVESTMENT
 #endif
 let startTime = D_START_DATE
 let endTime = D_FINISH_DATE
-//let wavesDecimals = 100000000
-let wavesDecimals1 = pow(10,0,8,0,0, Up())
+#let wavesDecimals = 100000000
+let wavesDecimals = pow(10,0,8,0,0, Up())
 
 
 func onlyManager(callerBytes: ByteVector) = {
