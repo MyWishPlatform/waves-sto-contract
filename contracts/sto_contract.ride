@@ -34,6 +34,12 @@ func onlyManager(callerBytes: ByteVector) = {
 }
 
 
+func getTimeNow() = {
+    let blockInfo = blockInfoByHeight(height).value()
+    blockInfo.timestamp / 1000
+}
+
+
 func getStartTime() = {
     let dataStartTime = getInteger(this, "startTime")
     match dataStartTime {
@@ -53,11 +59,7 @@ func getEndTime() = {
 
 
 func hasStarted() = {
-    let dataStartTime = getInteger(this, "startTime")
-    let stoStartTime = getStartTime()
-    let blockInfo = blockInfoByHeight(height).value()
-    let timeNow = blockInfo.timestamp
-    if timeNow > stoStartTime then
+    if getTimeNow() > getStartTime() then
         true
     else
         false
@@ -65,11 +67,7 @@ func hasStarted() = {
 
 
 func hasEnded() = {
-    let dataEndTime = getInteger(this, "endTime")
-    let stoEndTime = getEndTime()
-    let blockInfo = blockInfoByHeight(height).value()
-    let timeNow = blockInfo.timestamp
-    if timeNow > stoEndTime then
+    if getTimeNow() > getEndTime() then
         true
     else
         false
@@ -225,8 +223,7 @@ func finalize() = {
 func setStartTime(newStartTime: Int) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
     else {
-        let currentEndTime = getEndTime()
-        if (newStartTime > currentEndTime) then throw("Start date must be lower than end date")
+        if (newStartTime > getEndTime()) then throw("Start date must be lower than end date")
         else {
             WriteSet([
                 DataEntry("startTime", newStartTime)
@@ -240,8 +237,7 @@ func setStartTime(newStartTime: Int) = {
 func setEndTime(newEndTime: Int) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
     else {
-        let currentStartTime = getStartTime()
-        if (newEndTime < currentStartTime) then throw("End date must be higher than start date")
+        if (newEndTime < getStartTime()) then throw("End date must be higher than start date")
         else {
             WriteSet([
                 DataEntry("endTime", newEndTime)
@@ -258,9 +254,7 @@ func setStartAndEndTimes(newStartTime: Int, newEndTime: Int) = {
         # if (newStartTime > endHeight) then throw("Start date must be lower than end date")
         # else if (newEndTime < startHeight) then throw("End date must be higher than start date")
         # else if ((newStartTime <= height) then throw("Cannot set time to past")
-        let blockInfo = blockInfoByHeight(height).value()
-        let timeNow = blockInfo.timestamp
-        if (newEndTime <= timeNow) then throw("Cannot set time to past")
+        if (newEndTime <= getTimeNow()) then throw("Cannot set time to past")
         else {
             WriteSet([
                 DataEntry("startTime", newStartTime),
