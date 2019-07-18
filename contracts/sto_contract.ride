@@ -241,7 +241,7 @@ func setEndTime(newEndTime: Int) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
     else {
         let currentStartTime = getStartTime()
-        if (newEndTime > currentStartTime) then throw("End date must be higher than start date")
+        if (newEndTime < currentStartTime) then throw("End date must be higher than start date")
         else {
             WriteSet([
                 DataEntry("endTime", newEndTime)
