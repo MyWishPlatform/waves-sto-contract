@@ -162,8 +162,8 @@ func buyTokens() = {
     else if (sendedAmount > getMaxInvestment()) then throw("Attached payment is above maximum price")
     #endif
     else if !hasStarted() then throw("STO time is not started yet")
-    else if hasEnded() then throw("STO time is already ended")
     else if hasFinished() then throw("STO is finalized")
+    else if hasEnded() then throw("STO time is already ended")
     else {
         #let wavesRaised = wavesBalance(coldVault)
         let wavesRaised = getWavesRaised()
