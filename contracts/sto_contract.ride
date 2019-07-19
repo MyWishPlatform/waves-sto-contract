@@ -18,6 +18,7 @@ let minInvestmentWaves = D_MIN_INVESTMENT
 #if defined(D_MAX_INVESTMENT) && D_MAX_INVESTMENT != 0
 let maxInvestmentWaves = D_MAX_INVESTMENT
 #endif
+let allowDatesChange = D_CHANGING_DATES
 let startTime = D_START_DATE
 let endTime = D_FINISH_DATE
 #let wavesDecimals = 100000000
@@ -222,6 +223,7 @@ func finalize() = {
 @Callable(i)
 func setStartTime(newStartTime: Int) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
+    else if !allowDatesChange then throw("changing dates is not supported")
     else {
         if (newStartTime <= getTimeNow()) then throw("Cannot set time to past")
         else if (newStartTime > getEndTime()) then throw("Start date must be lower than end date")
@@ -237,6 +239,7 @@ func setStartTime(newStartTime: Int) = {
 @Callable(i)
 func setEndTime(newEndTime: Int) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
+    else if !allowDatesChange then throw("changing dates is not supported")
     else {
         if (newEndTime <= getTimeNow()) then throw("Cannot set time to past")
         else if (newEndTime < getStartTime()) then throw("End date must be higher than start date")
@@ -252,6 +255,7 @@ func setEndTime(newEndTime: Int) = {
 @Callable(i)
 func setStartAndEndTimes(newStartTime: Int, newEndTime: Int) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
+    else if !allowDatesChange then throw("changing dates is not supported")
     else {
         # if (newStartTime > endHeight) then throw("Start date must be lower than end date")
         # else if (newEndTime < startHeight) then throw("End date must be higher than start date")
