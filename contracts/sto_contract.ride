@@ -6,7 +6,8 @@ let managementAddress = base58'D_MANAGEMENT_ADDRESS'
 let coldVault = extract(addressFromString("D_COLD_VAULT_ADDR"))
 let token = base58'D_ASSET_ID'
 let tokenRate = D_RATE
-let tokenDecimalsOffset = D_DECIMALS_MULTIPLIER
+#let tokenDecimalsOffset = D_DECIMALS
+let tokenDecimalsOffset = pow(10,0,D_DECIMALS,0,0, Up())
 #if defined(D_SOFT_CAP_WAVES) && D_SOFT_CAP_WAVES != 0
 let softCapWaves = D_SOFT_CAP_WAVES
 #endif
@@ -17,43 +18,49 @@ let minInvestmentWaves = D_MIN_INVESTMENT
 #if defined(D_MAX_INVESTMENT) && D_MAX_INVESTMENT != 0
 let maxInvestmentWaves = D_MAX_INVESTMENT
 #endif
-let startHeight = D_START_DATE
-let endHeight = D_FINISH_DATE
-let wavesDecimals = 100000000
+let allowDatesChange = D_CHANGING_DATES
+let startTime = D_START_DATE
+let endTime = D_FINISH_DATE
+#let wavesDecimals = 100000000
+let wavesDecimals = pow(10,0,8,0,0, Up())
 
 
 func onlyManager(callerBytes: ByteVector) = {
     let caller = toBase58String(callerBytes)
     let managementAddressString = toBase58String(managementAddress)
-    if caller != managementAddressString then 
-        false 
-    else 
+    if caller != managementAddressString then
+        false
+    else
         true
 }
 
 
-func getStartHeight() = {
-    let dataStartHeight = getInteger(this, "startHeight")
-    match dataStartHeight {
-        case changedStartHeight:Int => changedStartHeight
-        case notChanged:Unit => startHeight
+func getTimeNow() = {
+    let blockInfo = blockInfoByHeight(height).value()
+    blockInfo.timestamp / 1000
+}
+
+
+func getStartTime() = {
+    let dataStartTime = getInteger(this, "startTime")
+    match dataStartTime {
+        case changedStartTime:Int => changedStartTime
+        case notChanged:Unit => startTime
     }
 }
 
 
-func getEndHeight() = {
-    let dataEndHeight = getInteger(this, "endHeight")
-    match dataEndHeight {
-        case changedEndHeight:Int => changedEndHeight
-        case notChanged:Unit => endHeight
+func getEndTime() = {
+    let dataEndTime = getInteger(this, "endTime")
+    match dataEndTime {
+        case changedEndTime:Int => changedEndTime
+        case notChanged:Unit => endTime
     }
 }
 
 
 func hasStarted() = {
-    let dataStartHeight = getInteger(this, "startHeight")
-    let stoStartHeight = getStartHeight()
-    if height > stoStartHeight then
+    if getTimeNow() > getStartTime() then
         true
     else
         false
@@ -61,9 +68,7 @@ func hasStarted() = {
 
 
 func hasEnded() = {
-    let dataEndHeight = getInteger(this, "endHeight")
-    let stoEndHeight = getEndHeight()
-    if height > stoEndHeight then
+    if getTimeNow() > getEndTime() then
         true
     else
         false
@@ -158,8 +163,8 @@ func buyTokens() = {
     else if (sendedAmount > getMaxInvestment()) then throw("Attached payment is above maximum price")
     #endif
     else if !hasStarted() then throw("STO time is not started yet")
-    else if hasEnded() then throw("STO time is already ended")
     else if hasFinished() then throw("STO is finalized")
+    else if hasEnded() then throw("STO time is already ended")
     else {
         #let wavesRaised = wavesBalance(coldVault)
         let wavesRaised = getWavesRaised()
@@ -204,7 +209,7 @@ func finalize() = {
             if (isReachedSoftCap || hasEnded()) then {
             #else
             if hasEnded() then {
-            #endif
+            #endifS
                 WriteSet([
                     DataEntry("finalized", true)
                 ])
@@ -218,12 +223,13 @@ func finalize() = {
 @Callable(i)
 func setStartTime(newStartTime: Int) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
+    else if !allowDatesChange then throw("changing dates is not supported")
     else {
-        let currentEndHeight = getEndHeight()
-        if (newStartTime > currentEndHeight) then throw("Start date must be lower than end date")
+        if (newStartTime <= getTimeNow()) then throw("Cannot set time to past")
+        else if (newStartTime > getEndTime()) then throw("Start date must be lower than end date")
         else {
             WriteSet([
-                DataEntry("startHeight", newStartTime)
+                DataEntry("startTime", newStartTime)
             ])
         }
     }
@@ -233,12 +239,13 @@ func setStartTime(newStartTime: Int) = {
 @Callable(i)
 func setEndTime(newEndTime: Int) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
+    else if !allowDatesChange then throw("changing dates is not supported")
     else {
-        let currentStartHeight = getStartHeight()
-        if (newEndTime > currentStartHeight) then throw("End date must be higher than start date")
+        if (newEndTime <= getTimeNow()) then throw("Cannot set time to past")
+        else if (newEndTime < getStartTime()) then throw("End date must be higher than start date")
         else {
             WriteSet([
-                DataEntry("endHeight", newEndTime)
+                DataEntry("endTime", newEndTime)
             ])
         }
     }
@@ -248,15 +255,18 @@ func setEndTime(newEndTime: Int) = {
 @Callable(i)
 func setStartAndEndTimes(newStartTime: Int, newEndTime: Int) = {
     if !(onlyManager(i.caller.bytes)) then throw("Only for administration")
+    else if !allowDatesChange then throw("changing dates is not supported")
     else {
         # if (newStartTime > endHeight) then throw("Start date must be lower than end date")
         # else if (newEndTime < startHeight) then throw("End date must be higher than start date")
         # else if ((newStartTime <= height) then throw("Cannot set time to past")
-        if (newEndTime <= height) then throw("Cannot set time to past")
+        if (newStartTime <= getTimeNow()) then throw("Cannot set start time to past")
+        else if (newStartTime > newEndTime) then throw("Start date must be lower than end date")
+        else if (newEndTime <= getTimeNow()) then throw("Cannot set end time to past")
         else {
             WriteSet([
-                DataEntry("startHeight", newStartTime),
-                DataEntry("endHeight", newEndTime)
+                DataEntry("startTime", newStartTime),
+                DataEntry("endTime", newEndTime)
             ])
         }
     }
